@@ -8,6 +8,16 @@ MODE="${1:-all}"
 
 if [ "$MODE" = "apt-install" ]; then
   shift
+  if [ "$#" -eq 0 ]; then
+    log 'No APT packages were selected.'
+    exit 2
+  fi
+  for PACKAGE in "$@"; do
+    if [[ ! "$PACKAGE" =~ ^[a-zA-Z0-9][a-zA-Z0-9.+-]*(:[a-zA-Z0-9][a-zA-Z0-9_-]*)?$ ]]; then
+      log "Invalid APT package name: $PACKAGE"
+      exit 2
+    fi
+  done
   step 10 'Refreshing APT package lists'
   apt-get update
   step 40 'Installing selected packages'
@@ -24,10 +34,23 @@ if [ "$MODE" = "flatpak-update" ]; then
   shift
   SCOPE="${1:---user}"
   shift || true
+  if [ "$SCOPE" != "--user" ] && [ "$SCOPE" != "--system" ]; then
+    log "Invalid Flatpak installation scope: $SCOPE"
+    exit 2
+  fi
+  if [ "$#" -eq 0 ]; then
+    log 'No Flatpak applications were selected.'
+    exit 2
+  fi
   step 30 "Updating selected Flatpak applications ($SCOPE)"
-  flatpak update -y "$SCOPE" "$@" || true
+  flatpak update -y "$SCOPE" "$@"
   step 100 'Flatpak updates complete'
   exit 0
+fi
+
+if [ "$MODE" != "all" ]; then
+  log "Unknown update mode: $MODE"
+  exit 2
 fi
 
 step 5 'Refreshing APT package lists'
