@@ -8,17 +8,14 @@ single, simple GTK interface. Package and Flatpak operations run as root via
 
 ## What it does today
 
-- Refreshes APT package lists and applies `dist-upgrade`.
-- Removes obsolete APT packages (`autoremove --purge`) and cleans the cache.
-- Updates system Flatpaks.
-- Repairs boot menu entries (`update-grub`).
-- Refreshes the initramfs (`update-initramfs -u -k all`).
-- Updates the current user's Flatpak applications.
-- Shows a segmented overall progress bar plus a mini progress bar for every
-  stage (APT refresh, upgrades, cleanup, system Flatpaks, boot menu, initramfs,
-  user Flatpaks), driven by the helper's `SPACED_STEP:%:%` progress events.
-- Switches between a **Simplified** view and a real **CLI output** view from a
-  drop-down, so the actual command output is available when needed.
+- **Check for Updates** lists every available APT package and Flatpak
+  application update with a checkbox for each, plus a **Select all** toggle.
+- **Install Selected** applies only the packages/apps you check, using the
+  helper's `apt-install` and `flatpak-update` subcommands with per-step
+  progress. (The default helper run still does a full
+  `dist-upgrade` + system Flatpak + boot menu + initramfs refresh.)
+- Shows step-by-step progress and a scrollable live log, switchable between a
+  **Progress** view and a real **CLI output** view from a drop-down.
 - Runs the privileged steps through the Polkit action
   `com.spacedlinux.update` so the helper is policy-controlled.
 
