@@ -22,6 +22,14 @@ single, simple GTK interface. Package and Flatpak operations run as root via
 - Runs the privileged steps through the Polkit action
   `com.spacedlinux.update` so the helper is policy-controlled.
 
+## Full OS update
+
+The **OS Update** tab checks the `crhy/spaced` release feed for the newest
+Spaced Linux ISO, compares it against the installed `/etc/os-release` version,
+downloads the ISO with a live progress bar, and verifies its SHA-256 checksum
+against the `.sha256` asset published with the release before offering to
+reboot.
+
 ## Layout
 
 ```
@@ -39,6 +47,8 @@ data/com.spacedlinux.update.policy  # Polkit policy for the helper
 - `bin/spaced-update` -> `/usr/local/bin/spaced-update`
 - `data/spaced-update.desktop` -> `/usr/share/applications/spaced-update.desktop`
 - `data/com.spacedlinux.update.policy` -> `/usr/share/polkit-1/actions/com.spacedlinux.update.policy`
+
+Downloaded OS ISOs are cached under `~/.cache/spaced-update/`.
 
 ## Roadmap
 
