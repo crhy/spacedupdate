@@ -36,21 +36,20 @@ def enumerate_apt():
 
 def enumerate_flatpak():
     try:
-        listed=subprocess.run(['flatpak','list','--app','--columns=application'],capture_output=True,text=True,timeout=60).stdout
+        listed=subprocess.run(['flatpak','list','--app','--columns=application,installation,ref'],capture_output=True,text=True,timeout=60).stdout
         upd=subprocess.run(['flatpak','remote-ls','--updates','--columns=ref'],capture_output=True,text=True,timeout=60).stdout
         names=subprocess.run(['flatpak','list','--app','--columns=application,name'],capture_output=True,text=True,timeout=60).stdout
     except Exception:
         return []
-    installed={l.split()[0] for l in listed.splitlines() if l.strip()}
+    upd_refs=set(l.split()[0] for l in upd.splitlines() if l.strip().startswith('app/'))
     name_map=dict((l.split()[0],' '.join(l.split()[1:])) for l in names.splitlines() if l.strip() and '\t' in l)
     items=[]
-    for line in upd.splitlines():
-        line=line.strip()
-        if not line.startswith('app/'): continue
-        ref=line[4:]
-        app_id=ref.split('/')[0]
-        if app_id not in installed: continue
-        items.append({'kind':'flatpak','name':app_id,'cur':None,'new':None,'display':name_map.get(app_id,app_id)})
+    for line in listed.splitlines():
+        parts=line.split('\t')
+        if len(parts)<3: continue
+        app_id,scope,ref=parts[0],parts[1],parts[2]
+        if 'app/'+ref not in upd_refs: continue
+        items.append({'kind':'flatpak','name':app_id,'ref':ref,'scope':scope,'display':name_map.get(app_id,app_id)})
     return sorted(items,key=lambda i:i['display'])
 
 class UpdateRow(Gtk.CheckButton):
@@ -205,17 +204,23 @@ class App(Gtk.Window):
 
     def _install_worker(self,items):
         apt=[i['name'] for i in items if i['kind']=='apt']
-        fp=[i['name'] for i in items if i['kind']=='flatpak']
+        fp_user=[i['ref'] for i in items if i['kind']=='flatpak' and i['scope']=='user']
+        fp_system=[i['ref'] for i in items if i['kind']=='flatpak' and i['scope']=='system']
         try:
             GLib.idle_add(self.setstep,0,'Preparing')
             if apt:
                 GLib.idle_add(self.logline,f'Installing {len(apt)} package(s): '+', '.join(apt))
                 rc=self.run_cmd(['pkexec','/usr/lib/spaced-linux/spaced-update-helper','apt-install']+apt,'Installing selected packages')
                 if rc: raise RuntimeError(f'Package install exited with status {rc}')
-            if fp:
-                GLib.idle_add(self.logline,f'Updating {len(fp)} application(s): '+', '.join(fp))
-                rc=self.run_cmd(['pkexec','/usr/lib/spaced-linux/spaced-update-helper','flatpak-update']+fp,'Updating selected Flatpak applications')
-                if rc: raise RuntimeError(f'Flatpak update exited with status {rc}')
+            if fp_user:
+                GLib.idle_add(self.logline,f'Updating {len(fp_user)} user application(s)')
+                GLib.idle_add(self.step_to_cli)
+                rc=self.run_flatpak_update('--user',fp_user)
+                if rc: raise RuntimeError(f'Flatpak user update exited with status {rc}')
+            if fp_system:
+                GLib.idle_add(self.logline,f'Updating {len(fp_system)} system application(s)')
+                rc=self.run_cmd(['pkexec','/usr/lib/spaced-linux/spaced-update-helper','flatpak-update','--system']+fp_system,'Updating system Flatpak applications')
+                if rc: raise RuntimeError(f'Flatpak system update exited with status {rc}')
             GLib.idle_add(self.setstep,100,'Done')
             GLib.idle_add(self.logline,'Finished successfully.')
             GLib.idle_add(self.status.set_text,'Updates installed successfully.')
@@ -226,6 +231,16 @@ class App(Gtk.Window):
             GLib.idle_add(self.runbtn.set_sensitive,True)
             GLib.idle_add(self.selectall.set_sensitive,True)
             GLib.idle_add(self.checkbtn.set_sensitive,True)
+
+    def step_to_cli(self,*_):
+        self.show_view('cli')
+
+    def run_flatpak_update(self,scope,refs):
+        cmd=['flatpak','update','-y',scope]+refs
+        p=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1)
+        for line in p.stdout:
+            GLib.idle_add(self.logline,line.rstrip())
+        return p.wait()
 
     def run_cmd(self,cmd,label,log_cb=None):
         if not log_cb: log_cb=self.logline

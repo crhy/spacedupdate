@@ -22,8 +22,10 @@ fi
 
 if [ "$MODE" = "flatpak-update" ]; then
   shift
-  step 30 'Updating selected Flatpak applications'
-  flatpak update -y --user "$@" || true
+  SCOPE="${1:---user}"
+  shift || true
+  step 30 "Updating selected Flatpak applications ($SCOPE)"
+  flatpak update -y "$SCOPE" "$@" || true
   step 100 'Flatpak updates complete'
   exit 0
 fi
