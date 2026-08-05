@@ -95,7 +95,7 @@ class App(Gtk.Window):
 
         # progress view
         prog=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        self.pstatus=Gtk.Label(label=''); self.pstatus.set_xalign(0); self.pstatus.set_wrap(True); prog.pack_start(self.pstatus,False,False,0)
+        self.pstatus=Gtk.Label(label=''); self.pstatus.set_xalign(0); self.pstatus.set_line_wrap(True); prog.pack_start(self.pstatus,False,False,0)
         self.pbar=Gtk.ProgressBar(); self.pbar.set_show_text(True); prog.pack_start(self.pbar,False,False,0)
         plog=Gtk.ScrolledWindow(); plog.set_hexpand(True); plog.set_vexpand(True)
         self.plog=Gtk.TextView(); self.plog.set_editable(False); self.plog.set_monospace(True)
@@ -264,11 +264,11 @@ class OsUpdateTab(Gtk.Box):
         status=Gtk.Label(); status.set_markup('<span size="large" weight="bold">Full OS update</span>'); status.set_xalign(0)
         self.pack_start(status,False,False,0)
         hint=Gtk.Label(label='Checks crhy/spaced for a newer Spaced Linux version. Spaced is a rolling release, so OS updates are delivered through the package repositories — no ISO download required.')
-        hint.set_xalign(0); hint.set_wrap(True); self.pack_start(hint,False,False,0)
+        hint.set_xalign(0); hint.set_line_wrap(True); self.pack_start(hint,False,False,0)
 
         self.inst=Gtk.Label(label=f'Installed: {self.installed or "unknown"}', xalign=0); self.pack_start(self.inst,False,False,0)
         self.lat=Gtk.Label(label='Latest: check the release feed to find out.', xalign=0); self.pack_start(self.lat,False,False,0)
-        self.msg=Gtk.Label(label='', xalign=0); self.msg.set_wrap(True); self.pack_start(self.msg,False,False,0)
+        self.msg=Gtk.Label(label='', xalign=0); self.msg.set_line_wrap(True); self.pack_start(self.msg,False,False,0)
 
         row=Gtk.Box(spacing=8); self.pack_start(row,False,False,0)
         self.checkbtn=Gtk.Button(label='Check for OS Updates'); self.checkbtn.connect('clicked',self.check); row.pack_start(self.checkbtn,False,False,0)
