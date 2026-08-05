@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import hashlib, json, os, re, subprocess, tempfile, threading, urllib.request, urllib.error
+import json, re, subprocess, threading, urllib.request
 import gi
 gi.require_version('Gtk','3.0')
 from gi.repository import Gtk, GLib
@@ -15,7 +15,6 @@ PHASES = [
 ]
 
 GITHUB_API='https://api.github.com/repos/crhy/spaced/releases?per_page=100'
-DOWNLOAD_DIR=os.path.expanduser('~/.cache/spaced-update')
 
 class PhaseRow(Gtk.Box):
     def __init__(self, name):
@@ -64,7 +63,7 @@ class OsUpdateTab(Gtk.Box):
         status=Gtk.Label(); status.set_markup(
             '<span size="large" weight="bold">Full OS update</span>'); status.set_xalign(0)
         self.pack_start(status,False,False,0)
-        hint=Gtk.Label(label='Checks crhy/spaced for the newest Spaced Linux ISO, downloads it, verifies its SHA-256 checksum, and prepares you to reboot.')
+        hint=Gtk.Label(label='Checks crhy/spaced for a newer Spaced Linux version. Spaced is a rolling release, so OS updates are delivered through the package repositories — no ISO download required.')
         hint.set_xalign(0); hint.set_wrap(True); self.pack_start(hint,False,False,0)
 
         self.inst=Gtk.Label(label=f'Installed: {self.installed or "unknown"}', xalign=0)
@@ -74,16 +73,12 @@ class OsUpdateTab(Gtk.Box):
 
         self.msg=Gtk.Label(label='', xalign=0); self.msg.set_wrap(True); self.pack_start(self.msg,False,False,0)
 
-        self.progress=Gtk.ProgressBar(); self.progress.set_show_text(True)
-        self.pack_start(self.progress,False,False,0)
-
         row=Gtk.Box(spacing=8); self.pack_start(row,False,False,0)
         self.checkbtn=Gtk.Button(label='Check for OS Updates'); self.checkbtn.connect('clicked',self.check)
         row.pack_start(self.checkbtn,False,False,0)
-        self.dlbtn=Gtk.Button(label='Download Latest ISO'); self.dlbtn.set_sensitive(False); self.dlbtn.connect('clicked',self.download)
-        row.pack_start(self.dlbtn,False,False,0)
-        self.rebootbtn=Gtk.Button(label='Reboot Now'); self.rebootbtn.set_sensitive(False); self.rebootbtn.connect('clicked',self.reboot)
-        row.pack_start(self.rebootbtn,False,False,0)
+        self.updatebtn=Gtk.Button(label='Update to Latest Version'); self.updatebtn.set_sensitive(False)
+        self.updatebtn.connect('clicked',self.app.do_os_update)
+        row.pack_start(self.updatebtn,False,False,0)
         self.pack_start(row,False,False,0)
 
         self.logscroll=Gtk.ScrolledWindow(); self.logscroll.set_hexpand(True); self.logscroll.set_vexpand(True)
@@ -108,22 +103,12 @@ class OsUpdateTab(Gtk.Box):
             if not candidates:
                 GLib.idle_add(self._check_done,None,None,'No published releases found.')
                 return
-            releases=sorted(candidates, key=lambda t: t[0])
-            latest=releases[-1]
-            name=None
-            for a in latest[1]['assets']:
-                if a['name'].endswith('.iso') and not a['name'].endswith('.sha256'):
-                    name=a['name']; break
-            if not name:
-                GLib.idle_add(self._check_done,None,None,'Latest release has no ISO asset.')
-                return
-            self.latest={'tag':latest[1]['tag_name'],'name':name,'url':next(a['browser_download_url'] for a in latest[1]['assets'] if a['name']==name),
-                         'sha':next((a['browser_download_url'] for a in latest[1]['assets'] if a['name']==name+'.sha256'),None)}
-            GLib.idle_add(self._check_done,self.latest,None,None)
+            latest=sorted(candidates, key=lambda t: t[0])[-1]
+            GLib.idle_add(self._check_done,{'tag':latest[1]['tag_name']},None,None)
         except Exception as e:
             GLib.idle_add(self._check_done,None,e,None)
 
-    def _check_done(self,latest,err,msg):
+    def _check_done(self,latest,err,msg=None):
         self.checkbtn.set_sensitive(True)
         if err:
             self.msg.set_text('Could not reach the Spaced Linux release feed.')
@@ -131,67 +116,16 @@ class OsUpdateTab(Gtk.Box):
             return
         if msg:
             self.msg.set_text(msg); self.logline(msg); return
-        self.lat.set_text(f'Latest: {latest["tag"]}  ({latest["name"]})')
-        self.msg.set_text('A newer release is available.')
-        self.dlbtn.set_sensitive(True)
-        self.logline(f'Found release {latest["tag"]}: {latest["name"]}')
-
-    def download(self,*_):
-        if not self.latest: return
-        os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-        self.dlbtn.set_sensitive(False)
-        self.progress.set_fraction(0); self.progress.set_text('Downloading ISO…')
-        self.logline(f'Downloading {self.latest["url"]}')
-        threading.Thread(target=self._download_worker,daemon=True).start()
-
-    def _download_worker(self):
-        latest=self.latest
-        try:
-            target=os.path.join(DOWNLOAD_DIR, latest['name'])
-            part=target+'.part'
-            req=urllib.request.Request(latest['url'], headers={'User-Agent':'spaced-update'})
-            with urllib.request.urlopen(req, timeout=60) as r:
-                total=int(r.headers.get('Content-Length') or 0)
-                h=hashlib.sha256()
-                written=0
-                with open(part,'wb') as f:
-                    while True:
-                        chunk=r.read(1<<20)
-                        if not chunk: break
-                        f.write(chunk); h.update(chunk); written+=len(chunk)
-                        if total:
-                            frac=written/total
-                            GLib.idle_add(self.progress.set_fraction,frac)
-                            GLib.idle_add(self.progress.set_text,f'Downloading… {written/1048576:.0f}/{total/1048576:.0f} MiB')
-            expected=None
-            if latest['sha']:
-                shreq=urllib.request.Request(latest['sha'], headers={'User-Agent':'spaced-update'})
-                shline=urllib.request.urlopen(shreq, timeout=30).read().decode().strip()
-                m=re.match(r'([0-9a-fA-F]{64})', shline)
-                if m: expected=m.group(1).lower()
-            actual=h.hexdigest()
-            if expected and actual!=expected:
-                raise RuntimeError(f'SHA-256 mismatch: expected {expected}, got {actual}')
-            os.replace(part,target)
-            GLib.idle_add(self._download_done,target,expected,actual,None)
-        except Exception as e:
-            GLib.idle_add(self._download_done,None,None,None,e)
-
-    def _download_done(self,target,expected,actual,err):
-        if err:
-            self.progress.set_text('Download failed')
-            self.logline(f'ERROR: {err}')
-            self.dlbtn.set_sensitive(True)
-            return
-        self.progress.set_fraction(1); self.progress.set_text('Verified — ready to apply')
-        self.msg.set_text(f'ISO ready at {target}. Back up your data, then reboot to apply the full OS update.')
-        self.logline(f'Downloaded {target}')
-        self.logline(f'SHA-256: {actual}' + (f' (verified)' if expected else ' (no checksum on release)'))
-        self.rebootbtn.set_sensitive(True)
-
-    def reboot(self,*_):
-        self.logline('Requesting reboot…')
-        threading.Thread(target=lambda: subprocess.call(['pkexec','systemctl','reboot']),daemon=True).start()
+        self.latest=latest
+        self.lat.set_text(f'Latest: {latest["tag"]}')
+        if self.installed and version_key(latest['tag']) > version_key(self.installed):
+            self.msg.set_text('A newer Spaced Linux version is available. It will be installed from the package repositories.')
+            self.updatebtn.set_sensitive(True)
+            self.logline(f'Newer version available: {latest["tag"]}')
+        elif self.installed and version_key(latest['tag']) <= version_key(self.installed):
+            self.msg.set_text('Your system is up to date. Repositories already carry the latest release.')
+        else:
+            self.msg.set_text('Installed version unknown; update through the System Updates tab regardless.')
 
 class App(Gtk.Window):
     def __init__(self):
@@ -245,6 +179,25 @@ class App(Gtk.Window):
     def _on_mode(self,*_):
         self.stack.set_visible_child_name(self.mode.get_active_id() or 'simple')
 
+    def do_os_update(self,*_):
+        tab=self.os_tab
+        tab.updatebtn.set_sensitive(False)
+        GLib.idle_add(tab.logline,'Applying OS update through package repositories…')
+        threading.Thread(target=self._os_update_worker,daemon=True).start()
+
+    def _os_update_worker(self):
+        tab=self.os_tab
+        try:
+            rc=self.run_cmd(['pkexec','/usr/lib/spaced-linux/spaced-update-helper'],
+                            'Updating system to the latest OS version', tab.logline)
+            if rc: raise RuntimeError(f'System update helper exited with status {rc}')
+            GLib.idle_add(tab.msg.set_text,'Your system is updated. A reboot is recommended.')
+            GLib.idle_add(tab.logline,'Finished successfully.')
+        except Exception as e:
+            GLib.idle_add(tab.logline,f'ERROR: {e}')
+        finally:
+            GLib.idle_add(tab.updatebtn.set_sensitive,True)
+
     def append(self,text):
         end=self.buf.get_end_iter(); self.buf.insert(end,text+'\n'); self.log.scroll_to_iter(self.buf.get_end_iter(),0,False,0,0)
 
@@ -271,19 +224,20 @@ class App(Gtk.Window):
         for b in self.seg_bars: b.set_fraction(0)
         threading.Thread(target=self.worker,daemon=True).start()
 
-    def run_cmd(self,cmd,label,base):
+    def run_cmd(self,cmd,label,log_cb):
         GLib.idle_add(self.status.set_text,label)
+        if not log_cb: log_cb=self.append
         p=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,bufsize=1)
         for line in p.stdout:
             line=line.rstrip(); m=re.match(r'SPACED_STEP:(\d+):(.*)',line)
             if m: GLib.idle_add(self.setstep,int(m.group(1)),m.group(2))
-            else: GLib.idle_add(self.append,line)
+            else: GLib.idle_add(log_cb,line)
         return p.wait()
 
     def worker(self):
         try:
             from shutil import which
-            rc=self.run_cmd(['pkexec','/usr/lib/spaced-linux/spaced-update-helper'],'Updating system packages',0)
+            rc=self.run_cmd(['pkexec','/usr/lib/spaced-linux/spaced-update-helper'],'Updating system packages',None)
             if rc: raise RuntimeError(f'System update helper exited with status {rc}')
             self.setstep(100,'Updating system Flatpaks')
             for pr in self.phases[:6]: pr.set_done()

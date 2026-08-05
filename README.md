@@ -25,10 +25,12 @@ single, simple GTK interface. Package and Flatpak operations run as root via
 ## Full OS update
 
 The **OS Update** tab checks the `crhy/spaced` release feed for the newest
-Spaced Linux ISO, compares it against the installed `/etc/os-release` version,
-downloads the ISO with a live progress bar, and verifies its SHA-256 checksum
-against the `.sha256` asset published with the release before offering to
-reboot.
+Spaced Linux version and compares it against the installed `/etc/os-release`
+version. Spaced Linux is a rolling release, so OS updates are applied from the
+package repositories via the existing update helper — no ISO download is needed.
+The tab simply tells you whether your system is current and routes the actual
+update through the normal `dist-upgrade` path, with a reboot recommendation
+when done.
 
 ## Layout
 
@@ -47,8 +49,6 @@ data/com.spacedlinux.update.policy  # Polkit policy for the helper
 - `bin/spaced-update` -> `/usr/local/bin/spaced-update`
 - `data/spaced-update.desktop` -> `/usr/share/applications/spaced-update.desktop`
 - `data/com.spacedlinux.update.policy` -> `/usr/share/polkit-1/actions/com.spacedlinux.update.policy`
-
-Downloaded OS ISOs are cached under `~/.cache/spaced-update/`.
 
 ## Roadmap
 
