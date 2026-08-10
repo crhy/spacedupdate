@@ -1,6 +1,6 @@
 # Spaced Update issue triage
 
-Reviewed on 2026-08-05 for the Spaced Linux 8.26 stabilization pass.
+Reviewed on 2026-08-10 for the Spaced Linux 8.26 stabilization pass.
 
 ## Implemented in this pass
 
@@ -9,6 +9,10 @@ Reviewed on 2026-08-05 for the Spaced Linux 8.26 stabilization pass.
   command output remains available in a collapsed, scrollable Technical details
   panel. The empty, update-list, current, failure, and OS-release states were
   also redesigned and tested under the current Spaced dark theme.
+- [#10 — OS update does not report the updated OS](https://github.com/crhy/spacedupdate/issues/10):
+  the OS tab now rereads the installed release marker after APT completes. It
+  reports the new version immediately, or clearly says that packages updated
+  while the configured repository's release marker remained behind.
 
 ## Deferred feature work
 

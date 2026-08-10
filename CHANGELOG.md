@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 8.26.3 - 2026-08-10
 
 ### Changed
 
@@ -19,6 +19,10 @@
 
 ### Fixed
 
+- The OS tab now rereads `/etc/os-release` after a full system update and
+  reports the newly installed Spaced Linux release without an app restart.
+- A successful APT run no longer claims a release upgrade when the configured
+  repository has not delivered the newer `spaced-meta` release marker.
 - User Flatpak updates no longer force the interface into a CLI-only view.
 - Technical output now has one shared buffer instead of duplicate log panes.
 - Scrollbars appear only where content can actually overflow.
