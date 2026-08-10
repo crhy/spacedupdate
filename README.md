@@ -14,8 +14,11 @@ single, simple GTK interface. Package and Flatpak operations run as root via
   helper's `apt-install` and `flatpak-update` subcommands with per-step
   progress. (The default helper run still does a full
   `dist-upgrade` + system Flatpak + boot menu + initramfs refresh.)
-- Shows step-by-step progress and a scrollable live log, switchable between a
-  **Progress** view and a real **CLI output** view from a drop-down.
+- Shows a clear overall progress bar and named update stages. The real command
+  output remains available in a collapsed, scrollable **Technical details**
+  panel when it is useful, without taking over the normal experience.
+- Uses one adaptive, theme-aware interface for both light and dark Spaced Linux
+  themes, with readable update cards and full-size action targets.
 - Runs the privileged steps through the Polkit action
   `com.spacedlinux.update` so the helper is policy-controlled.
 
@@ -50,12 +53,12 @@ data/com.spacedlinux.update.policy  # Polkit policy for the helper
 ## Roadmap
 
 Planned features are tracked as GitHub issues. See the
-[issue tracker](https://github.com/crhy/spacedupdate/issues) for:
+[issue tracker](https://github.com/crhy/spacedupdate/issues) and the current
+[triage notes](ISSUE-TRIAGE.md) for:
 
 - Full integration with Spaced Linux OS updates.
 - Peer-to-peer updating and Flatpak distribution.
-- A beautiful, simplified graphical install progress view (with a real CLI
-  available via a drop-down).
+- Further refinements to the graphical install progress experience.
 - Anonymity and privacy protection for shared data.
 - Password-protected anonymous file sharing.
 - A browsable, rating-driven theme browser.
