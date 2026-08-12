@@ -50,6 +50,32 @@ data/com.spacedlinux.update.policy  # Polkit policy for the helper
 - `data/spaced-update.desktop` -> `/usr/share/applications/spaced-update.desktop`
 - `data/com.spacedlinux.update.policy` -> `/usr/share/polkit-1/actions/com.spacedlinux.update.policy`
 
+## Flatpak release
+
+Spaced Update is also published as a Flatpak (`org.spacedlinux.SpacedUpdate`)
+for systems that do not carry the native package. Inside the sandbox, APT,
+Flatpak, and the pkexec helper are reached through `flatpak-spawn --host`, so
+the interface behaves exactly like the system app; privileged work still runs
+through the host's Polkit policy.
+
+- **Build**: `bash flatpak/build.sh` — produces a static OSTree repository in
+  `flatpak-build/repo` (Python 3.13 + PyGObject built from source, all Spaced
+  themes bundled so the app matches the desktop on any host).
+- **Publish**: `bash flatpak/publish.sh` — pushes the repository to the
+  `gh-pages` branch for serving at `https://crhy.github.io/spacedupdate/flatpak-repo`.
+- **Install from the published remote**:
+  ```
+  flatpak --user remote-add --if-not-exists --no-gpg-verify spacedupdate \
+      https://crhy.github.io/spacedupdate/flatpak-repo
+  flatpak --user install spacedupdate org.spacedlinux.SpacedUpdate
+  flatpak run org.spacedlinux.SpacedUpdate
+  ```
+  The repository is unsigned and uses `--no-gpg-verify`, mirroring the
+  `[trusted=yes]` Spaced Linux apt repository.
+
+On Spaced Linux, the native package remains the primary install; the Flatpak
+is the fallback and the distribution channel for non-Spaced hosts.
+
 ## Roadmap
 
 Planned features are tracked as GitHub issues. See the

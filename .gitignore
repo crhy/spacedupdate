@@ -1,4 +1,2 @@
-__pycache__/
-*.pyc
-build/
-dist/
+flatpak-build/
+flatpak/themes/

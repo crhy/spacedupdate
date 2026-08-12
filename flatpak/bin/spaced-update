@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /app/bin/python3 /app/lib/spaced-update/spaced-update.py "$@"

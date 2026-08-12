@@ -1,0 +1,82 @@
+{
+  "id": "org.spacedlinux.SpacedUpdate",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "48",
+  "sdk": "org.gnome.Sdk",
+  "command": "spaced-update",
+  "finish-args": [
+    "--share=network",
+    "--socket=x11",
+    "--socket=wayland",
+    "--device=dri",
+    "--filesystem=home",
+    "--talk-name=org.freedesktop.Flatpak",
+    "--system-talk-name=org.freedesktop.PolicyKit1"
+  ],
+  "build-options": {
+    "env": {
+      "CFLAGS": "-O2"
+    }
+  },
+  "modules": [
+    {
+      "name": "python3",
+      "buildsystem": "simple",
+      "build-commands": [
+        "./configure --prefix=/app --with-ensurepip=install --enable-shared --without-ensurepip-wheel",
+        "make -j ${FLATPAK_BUILDER_N_JOBS}",
+        "make install",
+        "/app/bin/python3 -m pip install --no-cache-dir --no-index setuptools-84.0.0-py3-none-any.whl"
+      ],
+      "sources": [
+        {
+          "type": "archive",
+          "url": "https://www.python.org/ftp/python/3.13.1/Python-3.13.1.tar.xz",
+          "sha256": "9cf9427bee9e2242e3877dd0f6b641c1853ca461f39d6503ce260a59c80bf0d9"
+        },
+        {
+          "type": "file",
+          "path": "setuptools-84.0.0-py3-none-any.whl"
+        }
+      ]
+    },
+    {
+      "name": "pygobject",
+      "buildsystem": "meson",
+      "build-options": {
+        "env": {
+          "PKG_CONFIG_PATH": "/app/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig",
+          "PATH": "/usr/bin:/bin"
+        }
+      },
+      "config-opts": [
+        "-Dpython=/app/bin/python3"
+      ],
+      "sources": [
+        {
+          "type": "archive",
+          "url": "https://download.gnome.org/sources/pygobject/3.50/pygobject-3.50.0.tar.xz",
+          "sha256": "8d836e75b5a881d457ee1622cae4a32bcdba28a0ba562193adb3bbb472472212"
+        }
+      ]
+    },
+    {
+      "name": "spaced-update",
+      "buildsystem": "simple",
+      "build-commands": [
+        "install -Dm755 src/spaced-update.py /app/lib/spaced-update/spaced-update.py",
+        "install -Dm755 flatpak/bin/spaced-update /app/bin/spaced-update",
+        "install -Dm644 flatpak/data/org.spacedlinux.SpacedUpdate.desktop /app/share/applications/org.spacedlinux.SpacedUpdate.desktop",
+        "install -Dm644 flatpak/data/org.spacedlinux.SpacedUpdate.png /app/share/icons/hicolor/512x512/apps/org.spacedlinux.SpacedUpdate.png",
+        "mkdir -p /app/share/themes",
+        "cp -a flatpak/themes/. /app/share/themes/"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": ".."
+        }
+      ]
+    }
+  ]
+}

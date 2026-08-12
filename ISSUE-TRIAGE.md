@@ -13,6 +13,18 @@ Reviewed on 2026-08-10 for the Spaced Linux 8.26 stabilization pass.
   the OS tab now rereads the installed release marker after APT completes. It
   reports the new version immediately, or clearly says that packages updated
   while the configured repository's release marker remained behind.
+- [#12 — No Flatpak?](https://github.com/crhy/spacedupdate/issues/12): the app
+  is now released as `org.spacedlinux.SpacedUpdate`, a self-contained Flatpak
+  built from `flatpak/org.spacedlinux.SpacedUpdate.json` with Python 3.13,
+  PyGObject, and the bundled Spaced themes. APT, Flatpak, and the pkexec
+  helper run through `flatpak-spawn --host`, so the sandbox behaves like the
+  native app. `flatpak/build.sh` builds the OSTree repository and
+  `flatpak/publish.sh` publishes it to GitHub Pages.
+- [#11 — stupid boxes on buttons](https://github.com/crhy/spacedupdate/issues/11):
+  the app now carries explicit flattened button styling (radius, outline
+  borders, hover/disabled states) so buttons match the modern Spaced theme on
+  every host theme; the theme's shared rules were also fixed to use
+  relocatable imports instead of absolute `/usr/share/themes` paths.
 
 ## Deferred feature work
 

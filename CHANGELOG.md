@@ -1,5 +1,20 @@
 # Changelog
 
+## 8.26.4.0.1 - 2026-08-11
+
+### Added
+
+- About button in the header bar showing the Spaced Update version
+  (also displayed in the window subtitle).
+- Version scheme: every Spaced Update release bumps the last digits of the
+  Spaced Linux release version by one (8.26.4.0.1, 8.26.4.0.2, ...). The
+  version lives in `VERSION` and `APP_VERSION` in `src/spaced-update.py`.
+
+### Changed
+
+- Released as the org.spacedlinux.SpacedUpdate Flatpak (Python 3.13 +
+  PyGObject built from source, bundled Spaced themes, flatpak-spawn --host).
+
 ## 8.26.3 - 2026-08-10
 
 ### Changed
