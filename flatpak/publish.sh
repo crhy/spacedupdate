@@ -23,7 +23,12 @@ test -d "$REPO/refs" || {
 rm -rf "$WORK"
 mkdir -p "$WORK"
 cd "$WORK"
-git clone --branch gh-pages --single-branch "$ROOT" . 2>/dev/null || git init -b gh-pages
+if git clone --branch gh-pages --single-branch "$ROOT" . 2>/dev/null; then
+    :
+else
+    git init -b gh-pages
+    git remote add origin "$(git -C "$ROOT" remote get-url origin 2>/dev/null || echo https://github.com/crhy/spacedupdate.git)"
+fi
 
 rm -rf flatpak-repo
 cp -a "$REPO" flatpak-repo
