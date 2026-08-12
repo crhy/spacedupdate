@@ -23,11 +23,12 @@ test -d "$REPO/refs" || {
 rm -rf "$WORK"
 mkdir -p "$WORK"
 cd "$WORK"
-if git clone --branch gh-pages --single-branch "$ROOT" . 2>/dev/null; then
+URL=$(git -C "$ROOT" remote get-url origin 2>/dev/null || echo https://github.com/crhy/spacedupdate.git)
+if git clone --branch gh-pages --single-branch "$URL" . 2>/dev/null; then
     :
 else
     git init -b gh-pages
-    git remote add origin "$(git -C "$ROOT" remote get-url origin 2>/dev/null || echo https://github.com/crhy/spacedupdate.git)"
+    git remote add origin "$URL"
 fi
 
 rm -rf flatpak-repo
