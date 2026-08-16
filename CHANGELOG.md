@@ -1,5 +1,31 @@
 # Changelog
 
+## 8.26.4.0.2 - 2026-08-15
+
+### Fixed
+
+- The Flatpak build now continues after finding `flatpak` on the host instead
+  of returning an empty update list from inside its sandbox.
+- Flatpak update discovery now compares normalized refs per installation scope
+  and queries remotes independently, so one stale or private remote no longer
+  hides updates from every healthy remote.
+- Header icon actions now use quiet transparent surfaces with compact
+  hover/focus feedback instead of raised square toolbar boxes.
+- The About dialog now reports the repository's actual MIT license, and the
+  Flatpak documentation accurately describes its required Spaced host helper.
+
+### Added
+
+- Unit coverage for version ordering, APT parsing, native no-Flatpak behavior,
+  sandboxed host discovery, per-scope refs, and failed-remote isolation.
+
+### Changed
+
+- Move the Flatpak from the end-of-life GNOME 48 runtime to GNOME 50 and use
+  its maintained Python/PyGObject stack instead of bundling a duplicate Python.
+- Prefer the native `flatpak-builder` release path when it is available while
+  retaining the Builder-app fallback.
+
 ## 8.26.4.0.1 - 2026-08-11
 
 ### Added

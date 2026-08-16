@@ -1,11 +1,11 @@
 #!/bin/bash
-set -uo pipefail
+set -euo pipefail
 
 # Build the Spaced Update Flatpak release into ./repo (an OSTree repository
 # suitable for publishing to GitHub Pages).
 #
 # Usage: bash flatpak/build.sh
-# Requires: flatpak, org.flatpak.Builder (flatpak install flathub org.flatpak.Builder)
+# Requires: flatpak and either flatpak-builder or org.flatpak.Builder.
 #
 # The Builder app builds every module reliably, but its final in-sandbox
 # command check resolves /app against the Builder's own app tree and always
@@ -47,34 +47,46 @@ STAGE="$BUILD/stage"
 rm -rf "$STAGE"
 mkdir -p "$BUILD" "$REPO" "$STAGE"
 
-set +e
-flatpak run org.flatpak.Builder \
-    --user \
-    --force-clean \
-    --ccache \
-    --repo="$REPO" \
-    "$STAGE" \
-    "$ROOT/flatpak/org.spacedlinux.SpacedUpdate.json"
-builder_status=$?
-set -e
-if [ "$builder_status" -ne 0 ] && [ ! -f "$STAGE/files/bin/spaced-update" ]; then
-    echo "Module build failed (stage incomplete); see the Builder output above." >&2
-    exit 1
+if command -v flatpak-builder >/dev/null 2>&1; then
+    flatpak-builder \
+        --user \
+        --force-clean \
+        --ccache \
+        --default-branch=stable \
+        --repo="$REPO" \
+        "$STAGE" \
+        "$ROOT/flatpak/org.spacedlinux.SpacedUpdate.json"
+else
+    set +e
+    flatpak run org.flatpak.Builder \
+        --user \
+        --force-clean \
+        --ccache \
+        --repo="$REPO" \
+        "$STAGE" \
+        "$ROOT/flatpak/org.spacedlinux.SpacedUpdate.json"
+    builder_status=$?
+    set -e
+    if [ "$builder_status" -ne 0 ] && [ ! -f "$STAGE/files/bin/spaced-update" ]; then
+        echo "Module build failed (stage incomplete); see the Builder output above." >&2
+        exit 1
+    fi
+
+    flatpak build-finish \
+        --command=spaced-update \
+        --share=network \
+        --socket=x11 \
+        --socket=wayland \
+        --device=dri \
+        --filesystem=home \
+        --talk-name=org.freedesktop.Flatpak \
+        --system-talk-name=org.freedesktop.PolicyKit1 \
+        "$STAGE"
+
+    rm -f "$REPO/refs/heads/app/org.spacedlinux.SpacedUpdate/x86_64/stable"
+    flatpak build-export --no-update-summary "$REPO" "$STAGE" stable
 fi
 
-flatpak build-finish \
-    --command=spaced-update \
-    --share=network \
-    --socket=x11 \
-    --socket=wayland \
-    --device=dri \
-    --filesystem=home \
-    --talk-name=org.freedesktop.Flatpak \
-    --system-talk-name=org.freedesktop.PolicyKit1 \
-    "$STAGE"
-
-rm -f "$REPO/refs/heads/app/org.spacedlinux.SpacedUpdate/x86_64/stable"
-flatpak build-export --no-update-summary "$REPO" "$STAGE" stable
 flatpak build-update-repo --generate-static-deltas "$REPO"
 
 echo "Repository ready at: $REPO"

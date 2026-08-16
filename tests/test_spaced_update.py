@@ -1,0 +1,88 @@
+#!/usr/bin/python3
+import importlib.util
+import json
+import os
+from pathlib import Path
+from subprocess import CompletedProcess
+import unittest
+from unittest import mock
+
+
+SOURCE = Path(__file__).resolve().parents[1] / "src" / "spaced-update.py"
+SPEC = importlib.util.spec_from_file_location("spaced_update", SOURCE)
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+
+class CoreTests(unittest.TestCase):
+    def test_version_key_orders_release_tags(self):
+        self.assertLess(MODULE.version_key("v8.26.4"), MODULE.version_key("8.26.5"))
+        self.assertEqual(MODULE.version_key(None), (0,))
+
+    def test_about_dialog_uses_repository_license(self):
+        source = SOURCE.read_text(encoding="utf-8")
+        self.assertIn("about.set_license_type(Gtk.License.MIT_X11)", source)
+
+    def test_flatpak_uses_supported_runtime(self):
+        manifest_path = (
+            SOURCE.parents[1]
+            / "flatpak"
+            / "org.spacedlinux.SpacedUpdate.json"
+        )
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(manifest["runtime-version"], "50")
+        self.assertEqual(
+            [module["name"] for module in manifest["modules"]],
+            ["spaced-update"],
+        )
+
+    def test_enumerate_apt_parses_and_sorts(self):
+        output = """Listing... Done
+zlib1g/ceres 1:1.3.2 amd64 [upgradable from: 1:1.3.1]
+apt/ceres 3.1.0 amd64 [upgradable from: 3.0.3]
+"""
+        with mock.patch.object(MODULE, "run_capture", return_value=output):
+            items = MODULE.enumerate_apt()
+        self.assertEqual([item["name"] for item in items], ["apt", "zlib1g"])
+        self.assertEqual(items[0]["cur"], "3.0.3")
+        self.assertEqual(items[0]["new"], "3.1.0")
+
+    def test_enumerate_flatpak_returns_empty_when_unavailable(self):
+        with mock.patch.object(MODULE.shutil, "which", return_value=None), \
+             mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(MODULE.enumerate_flatpak(), [])
+
+    def test_sandbox_enumerates_host_updates_and_ignores_one_bad_remote(self):
+        def capture(command, timeout=60):
+            if command == ["flatpak", "list", "--app", "--columns=application,name"]:
+                return "org.example.User\tUser App\norg.example.System\tSystem App\n"
+            if command[:3] == ["flatpak", "list", "--app"]:
+                return (
+                    "org.example.User\tuser\torg.example.User/x86_64/stable\n"
+                    "org.example.System\tsystem\torg.example.System/x86_64/stable\n"
+                )
+            if command == ["flatpak", "remotes", "--user", "--columns=name,options"]:
+                return "flathub\nexpired\nprivate\tno-enumerate\n"
+            if command == ["flatpak", "remotes", "--system", "--columns=name,options"]:
+                return "flathub\n"
+            if command[1:3] == ["remote-ls", "--updates"] and "expired" in command:
+                raise RuntimeError("summary unavailable")
+            if command[1:3] == ["remote-ls", "--updates"] and "--user" in command:
+                return "app/org.example.User/x86_64/stable\n"
+            if command[1:3] == ["remote-ls", "--updates"] and "--system" in command:
+                return "org.example.System/x86_64/stable\n"
+            self.fail(f"Unexpected command: {command}")
+
+        probe = CompletedProcess([], 0, stdout="/usr/bin/flatpak\n", stderr="")
+        with mock.patch.object(MODULE.shutil, "which", return_value=None), \
+             mock.patch.object(MODULE.subprocess, "run", return_value=probe), \
+             mock.patch.object(MODULE, "run_capture", side_effect=capture), \
+             mock.patch.dict(os.environ, {"FLATPAK_ID": "org.spacedlinux.SpacedUpdate"}, clear=True):
+            items = MODULE.enumerate_flatpak()
+
+        self.assertEqual([item["display"] for item in items], ["System App", "User App"])
+        self.assertEqual({item["scope"] for item in items}, {"system", "user"})
+
+
+if __name__ == "__main__":
+    unittest.main()

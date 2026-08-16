@@ -53,14 +53,16 @@ data/com.spacedlinux.update.policy  # Polkit policy for the helper
 ## Flatpak release
 
 Spaced Update is also published as a Flatpak (`org.spacedlinux.SpacedUpdate`)
-for systems that do not carry the native package. Inside the sandbox, APT,
+as an alternate UI package for Spaced Linux systems. Inside the sandbox, APT,
 Flatpak, and the pkexec helper are reached through `flatpak-spawn --host`, so
 the interface behaves exactly like the system app; privileged work still runs
-through the host's Polkit policy.
+through the host's Polkit policy. The host must therefore carry Spaced Linux's
+`spaced-update-helper` and Polkit action; the Flatpak is not a generic updater
+for unrelated distributions.
 
 - **Build**: `bash flatpak/build.sh` — produces a static OSTree repository in
-  `flatpak-build/repo` (Python 3.13 + PyGObject built from source, all Spaced
-  themes bundled so the app matches the desktop on any host).
+  `flatpak-build/repo` (supported GNOME runtime plus bundled Spaced themes so
+  the app matches the desktop on any host).
 - **Publish**: `bash flatpak/publish.sh` — pushes the repository to the
   `gh-pages` branch for serving at `https://crhy.github.io/spacedupdate/flatpak-repo`.
 - **Install from the published remote**:
@@ -74,7 +76,17 @@ through the host's Polkit policy.
   `[trusted=yes]` Spaced Linux apt repository.
 
 On Spaced Linux, the native package remains the primary install; the Flatpak
-is the fallback and the distribution channel for non-Spaced hosts.
+is the alternate application-delivery path.
+
+## Development checks
+
+Run the deterministic source tests and syntax checks on a Spaced Linux host:
+
+```sh
+python3 -m unittest discover -s tests -v
+python3 -m py_compile src/spaced-update.py tests/test_spaced_update.py
+bash -n src/spaced-update-helper install.sh flatpak/build.sh flatpak/publish.sh
+```
 
 ## Roadmap
 
