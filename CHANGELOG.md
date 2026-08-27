@@ -6,6 +6,8 @@
   can show a real preview before installation.
 - Replace the flat update glyph with the canonical silver Spaced emblem at a
   true 512px desktop and software-center size.
+- Use that same silver application icon in the About dialog instead of the
+  desktop theme's yellow generic updater glyph.
 
 ## 0.1.3 - 2026-08-27
 

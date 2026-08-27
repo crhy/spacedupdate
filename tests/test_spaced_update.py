@@ -40,6 +40,10 @@ class CoreTests(unittest.TestCase):
     def test_about_dialog_uses_repository_license(self):
         source = SOURCE.read_text(encoding="utf-8")
         self.assertIn("about.set_license_type(Gtk.License.MIT_X11)", source)
+        self.assertIn(
+            'about.set_logo_icon_name("org.spacedlinux.SpacedUpdate")', source
+        )
+        self.assertNotIn('about.set_logo_icon_name("system-software-update")', source)
 
     def test_flatpak_uses_supported_runtime(self):
         manifest_path = (

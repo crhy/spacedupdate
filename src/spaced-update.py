@@ -655,7 +655,7 @@ class App(Gtk.Window):
         about.set_version(APP_VERSION)
         about.set_comments("Update APT and Flatpak applications together")
         about.set_website("https://spacedlinux.com")
-        about.set_logo_icon_name("system-software-update")
+        about.set_logo_icon_name("org.spacedlinux.SpacedUpdate")
         about.set_license_type(Gtk.License.MIT_X11)
         about.connect("response", lambda d, _r: d.destroy())
         about.show_all()
