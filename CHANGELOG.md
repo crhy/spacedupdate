@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.5 - 2026-08-27
+
+- Added a dedicated polished silver update icon instead of reusing the generic
+  Spaced medallion.
+- Use the same update identity in SpacedBazaar, desktop menus, native installs,
+  Flatpak exports, and the About dialog.
+
 ## 0.1.4 - 2026-08-27
 
 - Add the current OS Release screenshot to AppStream metadata so SpacedBazaar

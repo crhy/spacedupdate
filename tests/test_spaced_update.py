@@ -45,6 +45,23 @@ class CoreTests(unittest.TestCase):
         )
         self.assertNotIn('about.set_logo_icon_name("system-software-update")', source)
 
+    def test_native_and_flatpak_use_the_dedicated_update_icon(self):
+        root = SOURCE.parents[1]
+        icon_name = "org.spacedlinux.SpacedUpdate"
+        native_desktop = (root / "data" / "spaced-update.desktop").read_text()
+        flatpak_desktop = (
+            root / "flatpak" / "data" / f"{icon_name}.desktop"
+        ).read_text()
+        manifest = json.loads(
+            (root / "flatpak" / f"{icon_name}.json").read_text()
+        )
+        commands = "\n".join(manifest["modules"][0]["build-commands"])
+
+        self.assertIn(f"Icon={icon_name}", native_desktop)
+        self.assertIn(f"Icon={icon_name}", flatpak_desktop)
+        self.assertIn(f"hicolor/scalable/apps/{icon_name}.svg", commands)
+        self.assertTrue((root / "data" / "icons" / f"{icon_name}.svg").is_file())
+
     def test_flatpak_uses_supported_runtime(self):
         manifest_path = (
             SOURCE.parents[1]

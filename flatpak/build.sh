@@ -98,6 +98,7 @@ flatpak build-bundle \
 
 test -s "$STAGE/files/share/metainfo/org.spacedlinux.SpacedUpdate.metainfo.xml"
 test -s "$STAGE/files/share/icons/hicolor/512x512/apps/org.spacedlinux.SpacedUpdate.png"
+test -s "$STAGE/files/share/icons/hicolor/scalable/apps/org.spacedlinux.SpacedUpdate.svg"
 
 echo "Repository ready at: $REPO"
 echo "Bundle ready at: $bundle"

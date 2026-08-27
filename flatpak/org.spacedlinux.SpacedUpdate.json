@@ -27,6 +27,7 @@
         "install -Dm755 flatpak/bin/spaced-update /app/bin/spaced-update",
         "install -Dm644 flatpak/data/org.spacedlinux.SpacedUpdate.desktop /app/share/applications/org.spacedlinux.SpacedUpdate.desktop",
         "install -Dm644 flatpak/data/org.spacedlinux.SpacedUpdate.metainfo.xml /app/share/metainfo/org.spacedlinux.SpacedUpdate.metainfo.xml",
+        "install -Dm644 data/icons/org.spacedlinux.SpacedUpdate.svg /app/share/icons/hicolor/scalable/apps/org.spacedlinux.SpacedUpdate.svg",
         "install -Dm644 flatpak/data/org.spacedlinux.SpacedUpdate.png /app/share/icons/hicolor/512x512/apps/org.spacedlinux.SpacedUpdate.png",
         "mkdir -p /app/share/themes",
         "cp -a flatpak/themes/. /app/share/themes/"
