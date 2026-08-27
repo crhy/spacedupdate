@@ -15,9 +15,8 @@ from gi.repository import Gdk, GLib, Gtk, Pango
 
 
 GITHUB_API = "https://api.github.com/repos/crhy/spaced/releases/latest"
-# Every Spaced Update release bumps the last two digits of the release
-# version by one (8.26.4.0.1, 8.26.4.0.2, …). Keep VERSION in sync.
-APP_VERSION = "8.26.4.0.2"
+# Keep this application version in sync with the repository VERSION file.
+APP_VERSION = "0.1.2"
 APT_RE = re.compile(
     r"^(\S+?)/\S+\s+(\S+)\s+\S+\s+\[upgradable from:\s+(.+)\]$"
 )

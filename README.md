@@ -61,19 +61,20 @@ through the host's Polkit policy. The host must therefore carry Spaced Linux's
 for unrelated distributions.
 
 - **Build**: `bash flatpak/build.sh` — produces a static OSTree repository in
-  `flatpak-build/repo` (supported GNOME runtime plus bundled Spaced themes so
-  the app matches the desktop on any host).
+  `flatpak-build/repo` and an updateable release bundle (supported GNOME
+  runtime plus bundled Spaced themes so the app matches the desktop on any
+  host).
 - **Publish**: `bash flatpak/publish.sh` — pushes the repository to the
   `gh-pages` branch for serving at `https://crhy.github.io/spacedupdate/flatpak-repo`.
-- **Install from the published remote**:
+- **Install from the signed Spaced GitHub remote**:
   ```
-  flatpak --user remote-add --if-not-exists --no-gpg-verify spacedupdate \
-      https://crhy.github.io/spacedupdate/flatpak-repo
-  flatpak --user install spacedupdate org.spacedlinux.SpacedUpdate
+  flatpak --user remote-add --if-not-exists spaced-github \
+      https://crhy.github.io/spacedbazaar/spaced-github.flatpakrepo
+  flatpak --user install spaced-github org.spacedlinux.SpacedUpdate
   flatpak run org.spacedlinux.SpacedUpdate
   ```
-  The repository is unsigned and uses `--no-gpg-verify`, mirroring the
-  `[trusted=yes]` Spaced Linux apt repository.
+  The central publication job verifies the GitHub release bundle and exports
+  its AppStream metadata and icon into the GPG-signed repository.
 
 On Spaced Linux, the native package remains the primary install; the Flatpak
 is the alternate application-delivery path.

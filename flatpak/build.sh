@@ -16,7 +16,7 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT"
 
 # The release version lives in VERSION and must match APP_VERSION in the
-# source; every release bumps it by 0.0.0.0.1.
+# source.
 version=$(cat VERSION)
 grep -q "APP_VERSION = \"$version\"" src/spaced-update.py || {
     echo "Version mismatch: VERSION ($version) != APP_VERSION in src/spaced-update.py." >&2
@@ -89,4 +89,15 @@ fi
 
 flatpak build-update-repo --generate-static-deltas "$REPO"
 
+bundle="$ROOT/SpacedUpdate-${version}-x86_64.flatpak"
+flatpak build-bundle \
+    --arch=x86_64 \
+    --repo-url=https://crhy.github.io/spacedbazaar/flatpak-repo/ \
+    --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo \
+    "$REPO" "$bundle" org.spacedlinux.SpacedUpdate stable
+
+test -s "$STAGE/files/share/metainfo/org.spacedlinux.SpacedUpdate.metainfo.xml"
+test -s "$STAGE/files/share/icons/hicolor/512x512/apps/org.spacedlinux.SpacedUpdate.png"
+
 echo "Repository ready at: $REPO"
+echo "Bundle ready at: $bundle"

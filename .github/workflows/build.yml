@@ -1,0 +1,100 @@
+name: Test and build Flatpak
+
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes python3-gi gir1.2-gtk-3.0
+      - name: Run deterministic tests
+        run: |
+          python3 -m unittest discover -s tests -v
+          python3 -m py_compile src/spaced-update.py tests/test_spaced_update.py
+          bash -n src/spaced-update-helper install.sh flatpak/build.sh flatpak/publish.sh
+
+  flatpak:
+    needs: test
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage Spaced themes
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive=$(mktemp)
+          stage=$(mktemp -d)
+          curl --fail --location --silent --show-error \
+            --output "$archive" https://github.com/crhy/spaced/archive/refs/heads/main.tar.gz
+          tar -xzf "$archive" -C "$stage"
+          mkdir -p flatpak/themes
+          cp -a "$stage"/*/overlays/usr/share/themes/Spaced-* flatpak/themes/
+          test -d flatpak/themes/Spaced-Dark
+      - name: Build Flatpak repository
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: flatpak/org.spacedlinux.SpacedUpdate.json
+          branch: stable
+          repo-dir: spaced-update-repo
+          build-bundle: false
+          upload-artifact: false
+          cache-key: flatpak-builder-${{ github.sha }}
+      - name: Create and verify updateable bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(cat VERSION)
+          bundle="SpacedUpdate-${version}-x86_64.flatpak"
+          flatpak build-bundle \
+            --arch=x86_64 \
+            --repo-url=https://crhy.github.io/spacedbazaar/flatpak-repo/ \
+            --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo \
+            spaced-update-repo "$bundle" org.spacedlinux.SpacedUpdate stable
+          probe=$(mktemp -d)
+          repo="$probe/repo"
+          checkout="$probe/checkout"
+          ostree init --repo="$repo" --mode=archive-z2
+          flatpak build-import-bundle --no-update-summary "$repo" "$bundle"
+          ref=app/org.spacedlinux.SpacedUpdate/x86_64/stable
+          ostree --repo="$repo" refs | grep -Fx "$ref"
+          ostree --repo="$repo" checkout --user-mode "$ref" "$checkout"
+          test -s "$checkout/export/share/metainfo/org.spacedlinux.SpacedUpdate.metainfo.xml"
+          test -s "$checkout/export/share/icons/hicolor/512x512/apps/org.spacedlinux.SpacedUpdate.png"
+      - name: Upload Flatpak bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpacedUpdate-Flatpak
+          path: SpacedUpdate-*-x86_64.flatpak
+          if-no-files-found: error
+          compression-level: 0
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: flatpak
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: SpacedUpdate-Flatpak
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Spaced Update ${{ github.ref_name }}
+          generate_release_notes: true
+          files: SpacedUpdate-*-x86_64.flatpak

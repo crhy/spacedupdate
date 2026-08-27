@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.spacedlinux.SpacedUpdate</id>
+  <name>Spaced Update</name>
+  <summary>Update Spaced Linux and its applications</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <developer id="com.spacedlinux">
+    <name>Spaced Linux</name>
+  </developer>
+  <description>
+    <p>Spaced Update checks APT and Flatpak together, lets you choose the updates to apply, and shows clear progress while the host system performs the work.</p>
+    <p>This Flatpak is intended for Spaced Linux. It uses the distribution's small policy-controlled host helper for privileged system updates.</p>
+  </description>
+  <launchable type="desktop-id">org.spacedlinux.SpacedUpdate.desktop</launchable>
+  <provides>
+    <binary>spaced-update</binary>
+  </provides>
+  <url type="homepage">https://spacedlinux.com</url>
+  <url type="bugtracker">https://github.com/crhy/spacedupdate/issues</url>
+  <url type="vcs-browser">https://github.com/crhy/spacedupdate</url>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.2" date="2026-08-27">
+      <description>
+        <p>Adds complete AppStream metadata so SpacedBazaar and other Flatpak stores can index, search, and display Spaced Update from a repository.</p>
+      </description>
+    </release>
+  </releases>
+</component>

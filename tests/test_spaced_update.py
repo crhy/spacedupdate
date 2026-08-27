@@ -6,6 +6,7 @@ from pathlib import Path
 from subprocess import CompletedProcess
 import unittest
 from unittest import mock
+import xml.etree.ElementTree as ET
 
 
 SOURCE = Path(__file__).resolve().parents[1] / "src" / "spaced-update.py"
@@ -34,6 +35,29 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(
             [module["name"] for module in manifest["modules"]],
             ["spaced-update"],
+        )
+
+    def test_flatpak_exports_searchable_appstream_metadata(self):
+        root = SOURCE.parents[1]
+        manifest = json.loads(
+            (root / "flatpak" / "org.spacedlinux.SpacedUpdate.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        commands = "\n".join(manifest["modules"][0]["build-commands"])
+        metainfo_path = (
+            root
+            / "flatpak"
+            / "data"
+            / "org.spacedlinux.SpacedUpdate.metainfo.xml"
+        )
+        metainfo = ET.parse(metainfo_path).getroot()
+
+        self.assertIn("/app/share/metainfo/org.spacedlinux.SpacedUpdate.metainfo.xml", commands)
+        self.assertEqual(metainfo.findtext("id"), "org.spacedlinux.SpacedUpdate")
+        self.assertEqual(
+            metainfo.find("./releases/release").attrib["version"],
+            MODULE.APP_VERSION,
         )
 
     def test_enumerate_apt_parses_and_sorts(self):

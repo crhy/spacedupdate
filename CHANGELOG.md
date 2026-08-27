@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.2 - 2026-08-27
+
+### Fixed
+
+- Export complete AppStream metadata from the Flatpak so SpacedBazaar and
+  other stores can index, search, and display Spaced Update from the new
+  shared Spaced GitHub repository.
+
+### Added
+
+- Validate the Flatpak application ID and release version directly from the
+  exported metainfo in the deterministic test suite.
+
+### Changed
+
+- Adopt an independent semantic version for Spaced Update so application
+  releases are clear and no longer confused with Spaced Linux releases.
+
 ## 8.26.4.0.2 - 2026-08-15
 
 ### Fixed
@@ -32,9 +50,8 @@
 
 - About button in the header bar showing the Spaced Update version
   (also displayed in the window subtitle).
-- Version scheme: every Spaced Update release bumps the last digits of the
-  Spaced Linux release version by one (8.26.4.0.1, 8.26.4.0.2, ...). The
-  version lives in `VERSION` and `APP_VERSION` in `src/spaced-update.py`.
+- The version lives in `VERSION` and `APP_VERSION` in
+  `src/spaced-update.py`.
 
 ### Changed
 
