@@ -20,6 +20,23 @@ class CoreTests(unittest.TestCase):
         self.assertLess(MODULE.version_key("v8.26.4"), MODULE.version_key("8.26.5"))
         self.assertEqual(MODULE.version_key(None), (0,))
 
+    def test_flatpak_reads_installed_version_from_host_once(self):
+        completed = CompletedProcess(
+            [], 0, stdout='NAME="Spaced Linux"\nVERSION_ID="8.26.9"\n', stderr=""
+        )
+        with mock.patch.object(MODULE.subprocess, "run", return_value=completed) as run, \
+             mock.patch.dict(
+                 os.environ,
+                 {"FLATPAK_ID": "org.spacedlinux.SpacedUpdate"},
+                 clear=True,
+             ):
+            self.assertEqual(MODULE.read_installed_version(), "8.26.9")
+
+        self.assertEqual(
+            run.call_args.args[0],
+            ["flatpak-spawn", "--host", "cat", "/etc/os-release"],
+        )
+
     def test_about_dialog_uses_repository_license(self):
         source = SOURCE.read_text(encoding="utf-8")
         self.assertIn("about.set_license_type(Gtk.License.MIT_X11)", source)

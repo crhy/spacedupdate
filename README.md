@@ -6,7 +6,7 @@ Spaced Update updates Spaced Linux systems through **APT** and **Flathub** in a
 single, simple GTK interface. Package and Flatpak operations run as root via
 `pkexec` against a small helper script, with a live progress and log view.
 
-![Spaced Update](screenshots/updates.png)
+![Spaced Update 0.1.3 showing the installed Spaced Linux version](screenshots/updates.png)
 
 ## What it does today
 

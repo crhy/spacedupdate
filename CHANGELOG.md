@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.3 - 2026-08-27
+
+### Fixed
+
+- Read the host Spaced Linux release through exactly one Flatpak host bridge,
+  so the OS Release tab displays the installed version instead of `Unknown`.
+
+### Added
+
+- Regression coverage for the sandboxed host release-marker command and its
+  parsed version.
+
 ## 0.1.2 - 2026-08-27
 
 ### Fixed

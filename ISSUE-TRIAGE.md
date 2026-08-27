@@ -4,6 +4,10 @@ Reviewed on 2026-08-15 for the Spaced Linux 8.26 stabilization pass.
 
 ## Implemented in this pass
 
+- [#15 — installed version stays Unknown](https://github.com/crhy/spacedupdate/issues/15):
+  remove the duplicate Flatpak host bridge when reading `/etc/os-release`, so
+  both the initial OS Release view and the post-update refresh display the
+  host's actual Spaced Linux version.
 - [#3 — graphical install progress](https://github.com/crhy/spacedupdate/issues/3):
   replaced the Progress / CLI selector with a clear staged-progress view. Raw
   command output remains available in a collapsed, scrollable Technical details

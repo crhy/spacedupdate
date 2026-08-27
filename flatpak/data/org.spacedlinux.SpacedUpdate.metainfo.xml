@@ -21,6 +21,11 @@
   <url type="vcs-browser">https://github.com/crhy/spacedupdate</url>
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="0.1.3" date="2026-08-27">
+      <description>
+        <p>Fixes installed Spaced Linux version detection from inside the Flatpak so the OS Release tab no longer displays Unknown.</p>
+      </description>
+    </release>
     <release version="0.1.2" date="2026-08-27">
       <description>
         <p>Adds complete AppStream metadata so SpacedBazaar and other Flatpak stores can index, search, and display Spaced Update from a repository.</p>

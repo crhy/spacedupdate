@@ -16,7 +16,7 @@ from gi.repository import Gdk, GLib, Gtk, Pango
 
 GITHUB_API = "https://api.github.com/repos/crhy/spaced/releases/latest"
 # Keep this application version in sync with the repository VERSION file.
-APP_VERSION = "0.1.2"
+APP_VERSION = "0.1.3"
 APT_RE = re.compile(
     r"^(\S+?)/\S+\s+(\S+)\s+\S+\s+\[upgradable from:\s+(.+)\]$"
 )
@@ -170,7 +170,9 @@ def read_installed_version():
     # the host release marker instead.
     if os.environ.get("FLATPAK_ID"):
         try:
-            output = run_capture(host(["cat", "/etc/os-release"]), timeout=15)
+            # run_capture() applies the Flatpak host bridge. Passing an already
+            # bridged command here would nest flatpak-spawn and return Unknown.
+            output = run_capture(["cat", "/etc/os-release"], timeout=15)
             for line in output.splitlines():
                 if line.startswith("VERSION_ID="):
                     return line.split("=", 1)[1].strip().strip('"')
