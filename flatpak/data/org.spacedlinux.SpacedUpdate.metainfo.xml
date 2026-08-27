@@ -20,7 +20,18 @@
   <url type="bugtracker">https://github.com/crhy/spacedupdate/issues</url>
   <url type="vcs-browser">https://github.com/crhy/spacedupdate</url>
   <content_rating type="oars-1.1" />
+  <screenshots>
+    <screenshot type="default">
+      <image type="source">https://raw.githubusercontent.com/crhy/spacedupdate/main/screenshots/updates.png</image>
+      <caption>The OS Release page showing installed and available Spaced Linux versions</caption>
+    </screenshot>
+  </screenshots>
   <releases>
+    <release version="0.1.4" date="2026-08-27">
+      <description>
+        <p>Adds a current AppStream screenshot for SpacedBazaar and replaces the flat yellow update glyph with the canonical silver Spaced emblem.</p>
+      </description>
+    </release>
     <release version="0.1.3" date="2026-08-27">
       <description>
         <p>Fixes installed Spaced Linux version detection from inside the Flatpak so the OS Release tab no longer displays Unknown.</p>

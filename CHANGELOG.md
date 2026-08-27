@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4 - 2026-08-27
+
+- Add the current OS Release screenshot to AppStream metadata so SpacedBazaar
+  can show a real preview before installation.
+- Replace the flat update glyph with the canonical silver Spaced emblem at a
+  true 512px desktop and software-center size.
+
 ## 0.1.3 - 2026-08-27
 
 ### Fixed
