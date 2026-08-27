@@ -27,6 +27,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.1.6" date="2026-08-27">
+      <description>
+        <p>Introduces a polished update-arrow medallion with swept, tapering silver arrows, and removes unnecessary access to the user's home directory and the system policy service while retaining the required host update bridge.</p>
+      </description>
+    </release>
     <release version="0.1.5" date="2026-08-27">
       <description>
         <p>Introduces the dedicated silver update icon across SpacedBazaar, application menus, and the About dialog.</p>

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.6 - 2026-08-27
+
+- Rebuilt the update identity as a brushed-silver and graphite medallion whose
+  narrow circular arrows taper to swept points like the Spaced emblem.
+- Removed unused access to the user's home directory and the system policy
+  service from the Flatpak sandbox.
+- Retained only the host bridge required to inspect and apply Spaced Linux and
+  Flatpak updates.
+
 ## 0.1.5 - 2026-08-27
 
 - Added a dedicated polished silver update icon instead of reusing the generic

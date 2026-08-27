@@ -78,9 +78,7 @@ else
         --socket=x11 \
         --socket=wayland \
         --device=dri \
-        --filesystem=home \
         --talk-name=org.freedesktop.Flatpak \
-        --system-talk-name=org.freedesktop.PolicyKit1 \
         "$STAGE"
 
     rm -f "$REPO/refs/heads/app/org.spacedlinux.SpacedUpdate/x86_64/stable"
@@ -98,7 +96,6 @@ flatpak build-bundle \
 
 test -s "$STAGE/files/share/metainfo/org.spacedlinux.SpacedUpdate.metainfo.xml"
 test -s "$STAGE/files/share/icons/hicolor/512x512/apps/org.spacedlinux.SpacedUpdate.png"
-test -s "$STAGE/files/share/icons/hicolor/scalable/apps/org.spacedlinux.SpacedUpdate.svg"
 
 echo "Repository ready at: $REPO"
 echo "Bundle ready at: $bundle"

@@ -59,8 +59,10 @@ class CoreTests(unittest.TestCase):
 
         self.assertIn(f"Icon={icon_name}", native_desktop)
         self.assertIn(f"Icon={icon_name}", flatpak_desktop)
-        self.assertIn(f"hicolor/scalable/apps/{icon_name}.svg", commands)
-        self.assertTrue((root / "data" / "icons" / f"{icon_name}.svg").is_file())
+        self.assertIn(f"hicolor/512x512/apps/{icon_name}.png", commands)
+        icon = root / "data" / "icons" / f"{icon_name}.png"
+        self.assertTrue(icon.is_file())
+        self.assertEqual(icon.read_bytes()[16:24], b"\x00\x00\x02\x00\x00\x00\x02\x00")
 
     def test_flatpak_uses_supported_runtime(self):
         manifest_path = (
@@ -73,6 +75,15 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(
             [module["name"] for module in manifest["modules"]],
             ["spaced-update"],
+        )
+        self.assertNotIn("--filesystem=home", manifest["finish-args"])
+        self.assertNotIn(
+            "--system-talk-name=org.freedesktop.PolicyKit1",
+            manifest["finish-args"],
+        )
+        self.assertIn(
+            "--talk-name=org.freedesktop.Flatpak",
+            manifest["finish-args"],
         )
 
     def test_flatpak_exports_searchable_appstream_metadata(self):

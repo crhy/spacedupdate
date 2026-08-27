@@ -75,7 +75,6 @@ jobs:
           ostree --repo="$repo" checkout --user-mode "$ref" "$checkout"
           test -s "$checkout/export/share/metainfo/org.spacedlinux.SpacedUpdate.metainfo.xml"
           test -s "$checkout/export/share/icons/hicolor/512x512/apps/org.spacedlinux.SpacedUpdate.png"
-          test -s "$checkout/export/share/icons/hicolor/scalable/apps/org.spacedlinux.SpacedUpdate.svg"
       - name: Upload Flatpak bundle
         uses: actions/upload-artifact@v4
         with:
