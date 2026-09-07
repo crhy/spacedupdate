@@ -34,7 +34,7 @@ class CoreTests(unittest.TestCase):
 
         self.assertEqual(
             run.call_args.args[0],
-            ["flatpak-spawn", "--host", "cat", "/etc/os-release"],
+            ["flatpak-spawn", "--host", "--env=LC_ALL=C", "cat", "/etc/os-release"],
         )
 
     def test_about_dialog_uses_repository_license(self):
@@ -125,36 +125,6 @@ apt/ceres 3.1.0 amd64 [upgradable from: 3.0.3]
              mock.patch.dict(os.environ, {}, clear=True):
             self.assertEqual(MODULE.enumerate_flatpak(), [])
 
-    def test_sandbox_enumerates_host_updates_and_ignores_one_bad_remote(self):
-        def capture(command, timeout=60):
-            if command == ["flatpak", "list", "--app", "--columns=application,name"]:
-                return "org.example.User\tUser App\norg.example.System\tSystem App\n"
-            if command[:3] == ["flatpak", "list", "--app"]:
-                return (
-                    "org.example.User\tuser\torg.example.User/x86_64/stable\n"
-                    "org.example.System\tsystem\torg.example.System/x86_64/stable\n"
-                )
-            if command == ["flatpak", "remotes", "--user", "--columns=name,options"]:
-                return "flathub\nexpired\nprivate\tno-enumerate\n"
-            if command == ["flatpak", "remotes", "--system", "--columns=name,options"]:
-                return "flathub\n"
-            if command[1:3] == ["remote-ls", "--updates"] and "expired" in command:
-                raise RuntimeError("summary unavailable")
-            if command[1:3] == ["remote-ls", "--updates"] and "--user" in command:
-                return "app/org.example.User/x86_64/stable\n"
-            if command[1:3] == ["remote-ls", "--updates"] and "--system" in command:
-                return "org.example.System/x86_64/stable\n"
-            self.fail(f"Unexpected command: {command}")
-
-        probe = CompletedProcess([], 0, stdout="/usr/bin/flatpak\n", stderr="")
-        with mock.patch.object(MODULE.shutil, "which", return_value=None), \
-             mock.patch.object(MODULE.subprocess, "run", return_value=probe), \
-             mock.patch.object(MODULE, "run_capture", side_effect=capture), \
-             mock.patch.dict(os.environ, {"FLATPAK_ID": "org.spacedlinux.SpacedUpdate"}, clear=True):
-            items = MODULE.enumerate_flatpak()
-
-        self.assertEqual([item["display"] for item in items], ["System App", "User App"])
-        self.assertEqual({item["scope"] for item in items}, {"system", "user"})
 
 
 if __name__ == "__main__":

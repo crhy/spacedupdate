@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0 - 2026-09-07
+
+- Refresh APT before checks and report failed sources, including partial
+  Flatpak failures; discover runtimes, private remotes, named installations,
+  and architecture-qualified native packages.
+- Apply full upgrades independently of GitHub, including the signed-in user's
+  Flatpaks, and report held/deferred packages instead of claiming all are current.
+- Serialize privileged transactions and desktop actions, preserve package
+  caches and old kernels, complete pending configuration on retry, and stop
+  on download, package, boot-refresh, or Flatpak failures.
+- Reject init-system replacement and core desktop removals; selected native
+  upgrades use only-upgrade/no-remove and validate package/ref arguments.
+- Keep OSTree commit objects during publication and verify repository
+  integrity; fail incomplete builds and pin the fallback theme source.
+- Add command-fixture, worker, and GTK interaction regression coverage.
+
 ## 0.1.6 - 2026-08-27
 
 - Rebuilt the update identity as a brushed-silver and graphite medallion whose

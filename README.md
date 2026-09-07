@@ -3,19 +3,20 @@
 The update application for [Spaced Linux](https://spacedlinux.com).
 
 Spaced Update updates Spaced Linux systems through **APT** and **Flathub** in a
-single, simple GTK interface. Package and Flatpak operations run as root via
-`pkexec` against a small helper script, with a live progress and log view.
+single GTK interface. System operations run through a small `pkexec` helper.
+Per-user Flatpaks run as the signed-in user, with a live progress and log view.
 
 ![Spaced Update 0.1.4 showing the installed Spaced Linux version](screenshots/updates.png)
 
 ## What it does today
 
-- **Check for Updates** lists every available APT package and Flatpak
-  application update with a checkbox for each, plus a **Select all** toggle.
+- **Check for Updates** refreshes APT indexes, then lists available packages
+  and Flatpak apps/runtimes in user, system, and named system installations.
+  Failed sources remain visible alongside results from healthy sources.
 - **Install Selected** applies only the packages/apps you check, using the
   helper's `apt-install` and `flatpak-update` subcommands with per-step
-  progress. (The default helper run still does a full
-  `dist-upgrade` + system Flatpak + boot menu + initramfs refresh.)
+  progress. Multiarch selections retain their architecture. Selected APT
+  updates cannot remove packages or silently install unrelated selections.
 - Shows a clear overall progress bar and named update stages. The real command
   output remains available in a collapsed, scrollable **Technical details**
   panel when it is useful, without taking over the normal experience.
@@ -26,13 +27,30 @@ single, simple GTK interface. Package and Flatpak operations run as root via
 
 ## Full OS update
 
-The **OS Update** tab checks the `crhy/spaced` release feed for the newest
+The **OS Release** tab optionally checks the `crhy/spaced` release feed for the newest
 Spaced Linux version and compares it against the installed `/etc/os-release`
 version. Spaced Linux is a rolling release, so OS updates are applied from the
 package repositories via the existing update helper — no ISO download is needed.
-The tab simply tells you whether your system is current and routes the actual
-update through the normal `dist-upgrade` path, with a reboot recommendation
-when done.
+**Update System** remains available even when GitHub is unavailable. It applies
+APT `dist-upgrade`, refreshes initramfs/GRUB, and updates all Flatpak apps and
+runtimes in both the system and signed-in user's installations. Existing
+named system installations are included. Other users' private installations
+are updated when those users run Spaced Update.
+
+The helper requires successful repository refreshes, waits for APT locks,
+retries downloads, and downloads packages before installation. A retry first
+completes pending dpkg configuration while preserving locally edited conffiles.
+It rejects plans that replace sysvinit or remove core Spaced desktop packages.
+It retains old kernels and downloaded packages; it does not run automatic
+autoremove/purge. Administrator holds and deferred updates are reported and
+never overridden. Authentication cancellation and command failures permit a
+retry; the window cannot close or start another operation during an update.
+
+An old installation still needs a working signed Spaced APT source and a
+current host helper. The updater cannot deliver packages that the repository
+has not published, override local pins, or repair every broken package graph.
+The installed release marker advances through the distribution packages,
+independently of GitHub's release-feed availability.
 
 ## Layout
 
@@ -65,7 +83,8 @@ for unrelated distributions.
 - **Build**: `bash flatpak/build.sh` — produces a static OSTree repository in
   `flatpak-build/repo` and an updateable release bundle (supported GNOME
   runtime plus bundled Spaced themes so the app matches the desktop on any
-  host).
+  host). Set `SPACED_THEME_SOURCE` to a local Spaced `usr/share/themes` directory
+  to use the release's themes; otherwise the build uses a pinned source commit.
 - **Publish**: `bash flatpak/publish.sh` — pushes the repository to the
   `gh-pages` branch for serving at `https://crhy.github.io/spacedupdate/flatpak-repo`.
 - **Install from the signed Spaced GitHub remote**:
@@ -87,9 +106,14 @@ Run the deterministic source tests and syntax checks on a Spaced Linux host:
 
 ```sh
 python3 -m unittest discover -s tests -v
+xvfb-run -a python3 -m unittest discover -s tests -v  # includes GTK interaction checks
 python3 -m py_compile src/spaced-update.py tests/test_spaced_update.py
 bash -n src/spaced-update-helper install.sh flatpak/build.sh flatpak/publish.sh
+bash tests/test_publish.sh  # temporary local Git/OSTree repositories only
 ```
+
+The reliability tests execute a copied helper against fixture commands in a
+temporary directory. They do not change the host package database.
 
 ## Roadmap
 

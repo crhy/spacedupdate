@@ -7,10 +7,7 @@ set -euo pipefail
 # Usage: bash flatpak/build.sh
 # Requires: flatpak and either flatpak-builder or org.flatpak.Builder.
 #
-# The Builder app builds every module reliably, but its final in-sandbox
-# command check resolves /app against the Builder's own app tree and always
-# reports the app command as missing. The exported stage is correct, so the
-# finish and export steps run here on the host.
+# A failed builder or export must stop the release, even if partial files exist.
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT"
@@ -26,14 +23,22 @@ grep -q "APP_VERSION = \"$version\"" src/spaced-update.py || {
 # The bundled themes are generated from the crhy/spaced tree, not committed
 # here. Sync them before building when the local copy is missing.
 if [ ! -d flatpak/themes/Spaced-Dark ]; then
-    echo "Syncing Spaced themes from crhy/spaced…"
+  if [ -n "${SPACED_THEME_SOURCE:-}" ]; then
+    mkdir -p flatpak/themes
+    cp -a "$SPACED_THEME_SOURCE"/Spaced-* flatpak/themes/
+  else
+    echo "Syncing pinned Spaced themes from crhy/spaced…"
     tarball=$(mktemp)
     stage=$(mktemp -d)
-    curl -sL -o "$tarball" https://github.com/crhy/spaced/archive/refs/heads/main.tar.gz
+    trap 'rm -f -- "$tarball"; rm -rf -- "$stage"' EXIT
+    theme_ref=${SPACED_THEME_REF:-033116984fad104f337777ad1439b2c2648711d9}
+    curl --fail --location --retry 3 -o "$tarball" "https://github.com/crhy/spaced/archive/$theme_ref.tar.gz"
     tar -xzf "$tarball" -C "$stage"
     mkdir -p flatpak/themes
-    mv "$stage"/*/overlays/usr/share/themes/Spaced-* flatpak/themes/ 2>/dev/null || true
+    cp -a "$stage"/*/overlays/usr/share/themes/Spaced-* flatpak/themes/
     rm -rf "$tarball" "$stage"
+    trap - EXIT
+  fi
     [ -d flatpak/themes/Spaced-Dark ] || {
         echo "Theme sync failed: extract overlays/usr/share/themes/Spaced-* from crhy/spaced into flatpak/themes/." >&2
         exit 1
@@ -57,34 +62,17 @@ if command -v flatpak-builder >/dev/null 2>&1; then
         "$STAGE" \
         "$ROOT/flatpak/org.spacedlinux.SpacedUpdate.json"
 else
-    set +e
     flatpak run org.flatpak.Builder \
         --user \
         --force-clean \
         --ccache \
+        --default-branch=stable \
         --repo="$REPO" \
         "$STAGE" \
         "$ROOT/flatpak/org.spacedlinux.SpacedUpdate.json"
-    builder_status=$?
-    set -e
-    if [ "$builder_status" -ne 0 ] && [ ! -f "$STAGE/files/bin/spaced-update" ]; then
-        echo "Module build failed (stage incomplete); see the Builder output above." >&2
-        exit 1
-    fi
-
-    flatpak build-finish \
-        --command=spaced-update \
-        --share=network \
-        --socket=x11 \
-        --socket=wayland \
-        --device=dri \
-        --talk-name=org.freedesktop.Flatpak \
-        "$STAGE"
-
-    rm -f "$REPO/refs/heads/app/org.spacedlinux.SpacedUpdate/x86_64/stable"
-    flatpak build-export --no-update-summary "$REPO" "$STAGE" stable
 fi
 
+ostree --repo="$REPO" fsck
 flatpak build-update-repo --generate-static-deltas "$REPO"
 
 bundle="$ROOT/SpacedUpdate-${version}-x86_64.flatpak"

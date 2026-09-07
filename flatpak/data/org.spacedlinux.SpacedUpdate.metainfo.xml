@@ -27,6 +27,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.2.0" date="2026-09-07">
+      <description>
+        <p>Updates the entire rolling OS and Flatpak apps and runtimes in user and system installations. Reports repository failures and held updates, refreshes package lists before checking, protects core desktop packages, and permits safe retries after interrupted upgrades.</p>
+      </description>
+    </release>
     <release version="0.1.6" date="2026-08-27">
       <description>
         <p>Introduces a polished update-arrow medallion with swept, tapering silver arrows, and removes unnecessary access to the user's home directory and the system policy service while retaining the required host update bridge.</p>
