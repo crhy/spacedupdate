@@ -190,6 +190,7 @@ if name == 'apt-mark': print(os.environ.get('HELD', ''))
         self.assertIn('Acquire::Retries=3', apt[0])
         transactions = [call for call in apt if 'dist-upgrade' in call]
         self.assertEqual(len(transactions), 3)
+        self.assertTrue(all('spaced-meta' in call for call in transactions))
         self.assertIn('--simulate', transactions[0])
         self.assertIn('--download-only', transactions[1])
         self.assertNotIn('--download-only', transactions[2])
