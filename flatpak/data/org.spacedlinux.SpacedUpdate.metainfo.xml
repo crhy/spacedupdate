@@ -17,6 +17,7 @@
     <binary>spaced-update</binary>
   </provides>
   <url type="homepage">https://spacedlinux.com</url>
+  <url type="help">https://spacedlinux.com/#help</url>
   <url type="bugtracker">https://github.com/crhy/spacedupdate/issues</url>
   <url type="vcs-browser">https://github.com/crhy/spacedupdate</url>
   <content_rating type="oars-1.1" />

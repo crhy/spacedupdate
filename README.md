@@ -72,6 +72,10 @@ data/com.spacedlinux.update.policy  # Polkit policy for the helper
 
 ## Flatpak release
 
+Get [online help](https://spacedlinux.com/#help), join
+[Discord](https://discord.gg/BMW9Y6NB3y), or join
+[Telegram](https://t.me/+pjmFzHo-i9A2ZWY5).
+
 Spaced Update is also published as a Flatpak (`org.spacedlinux.SpacedUpdate`)
 as an alternate UI package for Spaced Linux systems. Inside the sandbox, APT,
 Flatpak, and the pkexec helper are reached through `flatpak-spawn --host`, so
