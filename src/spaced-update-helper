@@ -104,7 +104,7 @@ while read -r ACTION PACKAGE _; do
   case "$ACTION:$PACKAGE" in
     Inst:systemd-sysv|Inst:systemd|Inst:runit-init|Inst:openrc)
       log "Refusing an upgrade that changes the sysvinit system: $PACKAGE"; exit 1 ;;
-    Remv:sysvinit-core|Remv:sysvinit-utils|Remv:initscripts|Remv:spaced-meta|Remv:spaced-mate-default-settings|Remv:mate-session-manager|Remv:mate-panel|Remv:caja|Remv:lightdm|Remv:network-manager|Remv:apt|Remv:dpkg|Remv:flatpak)
+    Remv:sysvinit-core|Remv:sysvinit-utils|Remv:initscripts|Remv:spaced-meta|Remv:spaced-mate-default-settings|Remv:mate-session-manager|Remv:mate-panel|Remv:caja|Remv:compiz|Remv:lightdm|Remv:network-manager|Remv:apt|Remv:dpkg|Remv:flatpak)
       log "Refusing removal of a core Spaced Linux package: $PACKAGE"; exit 1 ;;
   esac
 done <<< "$PLAN"

@@ -13,7 +13,7 @@ class ActualTransactionTests(unittest.TestCase):
                               text=True, capture_output=True, timeout=5)
 
     def test_protected_removal_is_refused(self):
-        for package in ('sysvinit-core', 'spaced-meta', 'mate-panel', 'caja', 'lightdm', 'apt', 'dpkg', 'flatpak', 'network-manager'):
+        for package in ('sysvinit-core', 'spaced-meta', 'mate-panel', 'compiz', 'caja', 'lightdm', 'apt', 'dpkg', 'flatpak', 'network-manager'):
             with self.subTest(package=package):
                 result = self.run_guard(f'{package} 1 > - **REMOVE**\n')
                 self.assertNotEqual(result.returncode, 0)

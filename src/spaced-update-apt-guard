@@ -29,7 +29,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     case "$action:$package" in
         '**REMOVE**':sysvinit-core|'**REMOVE**':sysvinit-utils|'**REMOVE**':initscripts|\
         '**REMOVE**':spaced-meta|'**REMOVE**':spaced-mate-default-settings|\
-        '**REMOVE**':mate-session-manager|'**REMOVE**':mate-panel|'**REMOVE**':caja|\
+        '**REMOVE**':mate-session-manager|'**REMOVE**':mate-panel|'**REMOVE**':caja|'**REMOVE**':compiz|\
         '**REMOVE**':lightdm|'**REMOVE**':network-manager|'**REMOVE**':apt|\
         '**REMOVE**':dpkg|'**REMOVE**':flatpak)
             fail "Refusing removal of a core Spaced Linux package: $package" ;;
