@@ -153,7 +153,11 @@ class HelperTests(unittest.TestCase):
         # Substitute only the lock pathname; all real package commands are
         # replaced by fixture executables in PATH before invoking this copy.
         self.helper.write_text((SOURCE.parent / 'spaced-update-helper').read_text().replace(
-            '/run/lock/spaced-update.lock', str(self.root / 'lock')))
+            '/run/lock/spaced-update.lock', str(self.root / 'lock')).replace(
+            '/usr/lib/spaced-linux/spaced-update-apt-guard', str(self.root / 'guard')))
+        self.guard = self.root / 'guard'
+        self.guard.write_text((SOURCE.parent / 'spaced-update-apt-guard').read_text())
+        self.guard.chmod(0o755)
         stub = self.root / 'command-stub'
         stub.write_text('''#!/usr/bin/python3
 import json, os, pathlib, sys
@@ -168,9 +172,10 @@ if name == 'dpkg-query': print('installed', end='')
 if name == 'apt-get' and '--simulate' in args: print(os.environ.get('APT_PLAN', 'Inst libexample [1] (2 Devuan:ceres [amd64])'))
 if name == 'flatpak' and 'list' in args: print('system\\nextra\\nextra')
 if name == 'apt-mark': print(os.environ.get('HELD', ''))
+if name == 'stat': print(os.environ.get('GUARD_METADATA', '0 755'))
 ''')
         stub.chmod(0o755)
-        for name in ('apt-get', 'dpkg-query', 'dpkg', 'flatpak', 'apt-mark', 'update-initramfs', 'update-grub'):
+        for name in ('apt-get', 'dpkg-query', 'dpkg', 'flatpak', 'apt-mark', 'update-initramfs', 'update-grub', 'stat'):
             (self.root / name).symlink_to(stub)
         self.log = self.root / 'commands.jsonl'
         self.env = {**os.environ, 'PATH': f'{self.root}:/usr/bin:/bin', 'COMMAND_LOG': str(self.log)}
@@ -203,7 +208,7 @@ if name == 'apt-mark': print(os.environ.get('HELD', ''))
     def test_refresh_failure_never_installs_or_claims_success(self):
         result, calls = self.run_helper('all', FAIL_COMMAND='apt-get', FAIL_ARG='update')
         self.assertEqual(result.returncode, 42)
-        self.assertEqual(len(calls), 1)
+        self.assertEqual(len([call for call in calls if call[0] != 'stat']), 1)
         self.assertNotIn('SPACED_STEP:100:', result.stdout)
 
     def test_failed_download_does_not_start_package_install(self):
@@ -232,6 +237,27 @@ if name == 'apt-mark': print(os.environ.get('HELD', ''))
             if 'install' in call:
                 self.assertIn('--only-upgrade', call)
                 self.assertIn('--no-remove', call)
+
+    def test_actual_install_uses_the_transaction_guard(self):
+        result, calls = self.run_helper('all')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        actual = next(call for call in calls if 'dist-upgrade' in call and '--simulate' not in call and '--download-only' not in call)
+        self.assertIn(f'DPkg::Pre-Install-Pkgs::={self.guard}', actual)
+        self.assertIn(f'DPkg::Tools::Options::{self.guard}::Version=2', actual)
+
+    def test_missing_guard_stops_before_package_commands(self):
+        self.guard.unlink()
+        result, calls = self.run_helper('all')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('guard is missing', result.stdout)
+        self.assertEqual(calls, [])
+
+    def test_writable_or_non_root_guard_stops_before_package_commands(self):
+        for metadata in ('1000 755', '0 775', '0 777'):
+            self.log.unlink(missing_ok=True)
+            result, calls = self.run_helper('all', GUARD_METADATA=metadata)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual([call[0] for call in calls], ['stat'])
 
     def test_rejects_apt_remove_suffix_and_flatpak_option_injection(self):
         for args in (('apt-install', 'apt-'), ('apt-install', '--allow-remove-essential'),
