@@ -37,10 +37,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          theme_ref=$(cat flatpak/themes.ref)
+          [[ "$theme_ref" =~ ^[0-9a-f]{40}$ ]]
           archive=$(mktemp)
           stage=$(mktemp -d)
           curl --fail --location --silent --show-error \
-            --output "$archive" https://github.com/crhy/spaced/archive/refs/heads/main.tar.gz
+            --output "$archive" "https://github.com/crhy/spaced/archive/$theme_ref.tar.gz"
           tar -xzf "$archive" -C "$stage"
           mkdir -p flatpak/themes
           cp -a "$stage"/*/overlays/usr/share/themes/Spaced-* flatpak/themes/
@@ -93,8 +95,9 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: SpacedUpdate-Flatpak
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           name: Spaced Update ${{ github.ref_name }}
           generate_release_notes: true
+          overwrite_files: false
           files: SpacedUpdate-*-x86_64.flatpak

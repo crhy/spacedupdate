@@ -20,30 +20,23 @@ grep -q "APP_VERSION = \"$version\"" src/spaced-update.py || {
     exit 1
 }
 
-# The bundled themes are generated from the crhy/spaced tree, not committed
-# here. Sync them before building when the local copy is missing.
-if [ ! -d flatpak/themes/Spaced-Dark ]; then
-  if [ -n "${SPACED_THEME_SOURCE:-}" ]; then
-    mkdir -p flatpak/themes
-    cp -a "$SPACED_THEME_SOURCE"/Spaced-* flatpak/themes/
-  else
-    echo "Syncing pinned Spaced themes from crhy/spaced…"
-    tarball=$(mktemp)
-    stage=$(mktemp -d)
-    trap 'rm -f -- "$tarball"; rm -rf -- "$stage"' EXIT
-    theme_ref=${SPACED_THEME_REF:-033116984fad104f337777ad1439b2c2648711d9}
-    curl --fail --location --retry 3 -o "$tarball" "https://github.com/crhy/spaced/archive/$theme_ref.tar.gz"
-    tar -xzf "$tarball" -C "$stage"
-    mkdir -p flatpak/themes
-    cp -a "$stage"/*/overlays/usr/share/themes/Spaced-* flatpak/themes/
-    rm -rf "$tarball" "$stage"
-    trap - EXIT
-  fi
-    [ -d flatpak/themes/Spaced-Dark ] || {
-        echo "Theme sync failed: extract overlays/usr/share/themes/Spaced-* from crhy/spaced into flatpak/themes/." >&2
-        exit 1
-    }
-fi
+# Use one explicit theme revision for local and CI builds. Refresh generated
+# content on every build so an older local cache cannot silently enter a release.
+tarball=$(mktemp)
+stage=$(mktemp -d)
+trap 'rm -f -- "$tarball"; rm -rf -- "$stage"' EXIT
+theme_ref=$(cat flatpak/themes.ref)
+[[ "$theme_ref" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid pinned theme revision' >&2; exit 1; }
+echo "Syncing Spaced themes at $theme_ref…"
+curl --fail --location --retry 3 -o "$tarball" "https://github.com/crhy/spaced/archive/$theme_ref.tar.gz"
+tar -xzf "$tarball" -C "$stage"
+test -d "$stage/spaced-$theme_ref/overlays/usr/share/themes/Spaced-Dark"
+rm -rf -- flatpak/themes
+mkdir -p flatpak/themes
+cp -a "$stage/spaced-$theme_ref/overlays/usr/share/themes/"Spaced-* flatpak/themes/
+rm -f -- "$tarball"
+rm -rf -- "$stage"
+trap - EXIT
 
 BUILD="${BUILD_DIR:-$ROOT/flatpak-build}"
 REPO="$BUILD/repo"
