@@ -28,6 +28,9 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.2.2" date="2026-09-10">
+      <description><p>Reports what the reachable sources found instead of claiming the whole check failed when a single Flatpak remote cannot be reached, while still refusing to call a machine up to date when nothing could be checked at all.</p></description>
+    </release>
     <release version="0.2.1" date="2026-09-08">
       <description><p>Includes the corrected Spaced GTK themes and pins release build inputs. Published assets are preserved on repeated CI builds.</p></description>
     </release>

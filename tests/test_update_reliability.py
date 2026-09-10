@@ -134,6 +134,104 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(app._check_done.call_args.args[:2], ([], packages))
         self.assertIn('offline', app._check_done.call_args.args[2])
 
+    def test_unreachable_remote_does_not_hide_a_healthy_up_to_date_system(self):
+        # A stale or offline Flatpak remote used to blank the whole result:
+        # with nothing to update and a warning present, the window claimed the
+        # check had failed on a system that was simply current.
+        app = SimpleNamespace(_check_done=mock.Mock())
+
+        def enumerate_flatpak(warnings=None, stats=None):
+            if stats is not None:
+                stats['remotes_total'] = 3
+                stats['remotes_failed'] = 1
+            warnings.append('user/test-spaced: could not connect to server')
+            return []
+
+        with mock.patch.object(MODULE.GLib, 'idle_add', side_effect=lambda f, *a: f(*a)), \
+             mock.patch.object(MODULE, 'run_capture', return_value=''), \
+             mock.patch.object(MODULE, 'enumerate_apt', return_value=[]), \
+             mock.patch.object(MODULE, 'enumerate_flatpak', side_effect=enumerate_flatpak):
+            MODULE.App._check_worker(app)
+        args = app._check_done.call_args.args
+        self.assertEqual(args[:2], ([], []))
+        self.assertIn('test-spaced', args[2])
+        self.assertTrue(args[3], 'a completed check must not be reported as unchecked')
+
+    def test_a_machine_that_can_reach_nothing_is_never_called_up_to_date(self):
+        # Every remote failing and APT refusing to refresh means nothing was
+        # learned; that must still be reported as a failed check.
+        app = SimpleNamespace(_check_done=mock.Mock())
+
+        def enumerate_flatpak(warnings=None, stats=None):
+            if stats is not None:
+                stats['remotes_total'] = 2
+                stats['remotes_failed'] = 2
+            warnings.append('user/flathub: could not connect to server')
+            return []
+
+        with mock.patch.object(MODULE.GLib, 'idle_add', side_effect=lambda f, *a: f(*a)), \
+             mock.patch.object(MODULE, 'run_capture', side_effect=RuntimeError('offline')), \
+             mock.patch.object(MODULE, 'enumerate_apt', return_value=[]), \
+             mock.patch.object(MODULE, 'enumerate_flatpak', side_effect=enumerate_flatpak):
+            MODULE.App._check_worker(app)
+        args = app._check_done.call_args.args
+        self.assertFalse(args[3], 'nothing was reachable, so nothing was checked')
+
+    def test_a_machine_with_no_flatpak_remotes_still_counts_as_checked(self):
+        app = SimpleNamespace(_check_done=mock.Mock())
+
+        def enumerate_flatpak(warnings=None, stats=None):
+            if stats is not None:
+                stats['remotes_total'] = 0
+                stats['remotes_failed'] = 0
+            return []
+
+        with mock.patch.object(MODULE.GLib, 'idle_add', side_effect=lambda f, *a: f(*a)), \
+             mock.patch.object(MODULE, 'run_capture', return_value=''), \
+             mock.patch.object(MODULE, 'enumerate_apt', return_value=[]), \
+             mock.patch.object(MODULE, 'enumerate_flatpak', side_effect=enumerate_flatpak):
+            MODULE.App._check_worker(app)
+        self.assertTrue(app._check_done.call_args.args[3])
+
+    def check_done_app(self):
+        """Minimal widget stand-ins for the result-rendering path."""
+        return SimpleNamespace(
+            _set_busy=mock.Mock(), empty_spinner=mock.Mock(), empty_icon=mock.Mock(),
+            empty_title=mock.Mock(), empty_detail=mock.Mock(),
+            status_icon=mock.Mock(), status_title=mock.Mock(), status=mock.Mock(),
+            content_stack=mock.Mock(), listbox=mock.Mock(), selectall=mock.Mock(),
+            selection_count=mock.Mock(), _apt_rows=[], _fp_rows=[],
+            _set_status=mock.Mock())
+
+    def test_up_to_date_with_a_dead_remote_is_not_shown_as_a_failed_check(self):
+        # Issue seen on a fully updated desktop carrying a stale development
+        # remote: the window reported "Could not check for updates" and
+        # "Update check failed" although nothing was actually wrong.
+        app = self.check_done_app()
+        MODULE.App._check_done(
+            app, [], [],
+            'user/test-spaced: could not connect to server', True)
+        title = app.empty_title.set_text.call_args.args[0]
+        self.assertNotIn('failed', title.casefold())
+        self.assertEqual(title, 'No updates found')
+        status_title = app._set_status.call_args.args[1]
+        self.assertNotIn('could not check for updates', status_title.casefold())
+        self.assertIn('test-spaced', app.empty_detail.set_text.call_args.args[0])
+
+    def test_nothing_reachable_still_reports_a_failed_check(self):
+        app = self.check_done_app()
+        MODULE.App._check_done(app, [], [], 'System packages: offline', False)
+        self.assertEqual(app.empty_title.set_text.call_args.args[0],
+                         'Update check failed')
+        self.assertEqual(app._set_status.call_args.args[1],
+                         'Could not check for updates')
+
+    def test_a_clean_check_with_no_updates_says_up_to_date(self):
+        app = self.check_done_app()
+        MODULE.App._check_done(app, [], [], None, True)
+        self.assertEqual(app.empty_title.set_text.call_args.args[0],
+                         'Everything is current')
+
     def test_deferred_packages_are_reported(self):
         app = self.app()
         with mock.patch.object(MODULE.GLib, 'idle_add', side_effect=lambda f, *args: f(*args)), \
