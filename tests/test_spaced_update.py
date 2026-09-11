@@ -18,7 +18,21 @@ SPEC.loader.exec_module(MODULE)
 class CoreTests(unittest.TestCase):
     def test_version_key_orders_release_tags(self):
         self.assertLess(MODULE.version_key("v8.26.4"), MODULE.version_key("8.26.5"))
-        self.assertEqual(MODULE.version_key(None), (0,))
+        self.assertLess(MODULE.version_key("v8.26.9"), MODULE.version_key("9.26"))
+        self.assertLess(MODULE.version_key("v9.26"), MODULE.version_key("9.26.1"))
+        self.assertEqual(MODULE.version_key(None), (0, 0, 0))
+
+    def test_version_key_orders_across_the_year_boundary(self):
+        # The month wraps, so 1.27 opens the line after 12.26. Comparing the
+        # numbers as written would make every 2027 release look older than
+        # 12.26 and the OS tab would report a year-old system as current.
+        self.assertLess(MODULE.version_key("v12.26"), MODULE.version_key("1.27"))
+        self.assertLess(MODULE.version_key("v12.26"), MODULE.version_key("2.27"))
+        self.assertLess(MODULE.version_key("v12.26"), MODULE.version_key("9.27"))
+        self.assertLess(MODULE.version_key("v1.27"), MODULE.version_key("12.27"))
+        self.assertLess(MODULE.version_key("v11.26"), MODULE.version_key("12.26"))
+        # A newer line is never mistaken for an older one in either direction.
+        self.assertGreater(MODULE.version_key("v1.27"), MODULE.version_key("12.26.3"))
 
     def test_flatpak_reads_installed_version_from_host_once(self):
         completed = CompletedProcess(
