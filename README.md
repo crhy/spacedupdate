@@ -104,6 +104,18 @@ for unrelated distributions.
 On Spaced Linux, the native package remains the primary install; the Flatpak
 is the alternate application-delivery path.
 
+## Privacy and anonymity
+
+[docs/PRIVACY-THREAT-MODEL.md](docs/PRIVACY-THREAT-MODEL.md) states what the updater can
+and cannot keep private: which observers (GitHub, APT origins, Flatpak remote origins,
+future peers, the network itself) may learn your IP, timing, app selections or file
+metadata, which call site reveals it, and what no protocol can verify. It writes no log
+file and sends no machine identifier, and every request goes to an origin you already
+configured. "Anonymous and untraceable" is not achievable and must not be promised in
+any interface string. Any peer transport or file sharing in [#2](https://github.com/crhy/spacedupdate/issues/2)
+or [#5](https://github.com/crhy/spacedupdate/issues/5) must satisfy the controls listed there
+before it is enabled.
+
 ## Development checks
 
 Run the deterministic source tests and syntax checks on a Spaced Linux host:
@@ -128,7 +140,8 @@ Planned features are tracked as GitHub issues. See the
 - Full integration with Spaced Linux OS updates.
 - Peer-to-peer updating and Flatpak distribution.
 - Further refinements to the graphical install progress experience.
-- Anonymity and privacy protection for shared data.
+- Anonymity and privacy protection for shared data, gated on
+  [docs/PRIVACY-THREAT-MODEL.md](docs/PRIVACY-THREAT-MODEL.md).
 - Password-protected anonymous file sharing.
 - A browsable, rating-driven theme browser.
 - App suggestions, ratings, reviews, and metrics as a Bazaar alternative.

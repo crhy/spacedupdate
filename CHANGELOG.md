@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `docs/PRIVACY-THREAT-MODEL.md` for [#4](https://github.com/crhy/spacedupdate/issues/4):
+  the observer table (publisher, APT origins, Flatpak remote origins, future peers and
+  relays, the network itself, holders of a shared file) with the call site that reveals
+  each leak, the boundary the code verifies against the boundary no protocol can verify,
+  the leakage accepted today, and the consent, bandwidth, metadata and fallback controls
+  a peer transport must carry before it is enabled. The model is written; the updater's
+  behaviour is unchanged, and the implementation stays blocked behind this document.
+
 ## 0.2.0 - 2026-09-07
 
 - Refresh APT before checks and report failed sources, including partial
