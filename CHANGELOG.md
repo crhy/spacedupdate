@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- A Flatpak application installed from one remote is now offered when another
+  remote of the same installation carries a newer version, so apps installed
+  from a per-app remote such as `spacedbazaar-origin` no longer report themselves
+  as current while the shared `spaced-github` remote carries a newer build.
+- Updates are chosen by comparing the installed version against every enabled
+  remote's version per application and branch; equal or older builds are still
+  not offered, and unreachable remotes are still reported instead of silently
+  returning an empty list.
+
 ## 0.2.0 - 2026-09-07
 
 - Refresh APT before checks and report failed sources, including partial

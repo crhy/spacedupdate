@@ -25,22 +25,32 @@ class DiscoveryTests(unittest.TestCase):
     def capture(self, command, timeout=60):
         if command[1] == 'list':
             self.assertIn('--all', command)
-            return ('org.example.User\tuser\torg.example.User/x86_64/stable\tUser App\n'
-                    'org.example.Platform\tsystem\torg.example.Platform/x86_64/50\tPlatform\n'
-                    'org.example.Private\textra\torg.example.Private/x86_64/stable\tPrivate App\n')
+            if '--columns=application,installation,ref,name' in command:
+                return ('org.example.User\tuser\tapp/org.example.User/x86_64/stable\tUser App\n'
+                        'org.example.Platform\tsystem\truntime/org.example.Platform/x86_64/50\tPlatform\n'
+                        'org.example.Private\textra\tapp/org.example.Private/x86_64/stable\tPrivate App\n')
+            if '--user' in command:
+                return 'org.example.User\tstable\t1\n'
+            if '--system' in command:
+                return 'org.example.Platform\t50\t49\n'
+            if '--installation=extra' in command:
+                return 'org.example.Private\tstable\t2\n'
+            return ''
         if command[1] == 'remotes':
             return 'flathub\nprivate\tno-enumerate\nexpired\nremoved\tdisabled\n'
         if command[1] == 'remote-ls':
-            self.assertIn('--all', command)
+            # Each remote is asked which version it carries for each application
+            # and branch; Flatpak's own update filter is not used because it
+            # hides applications installed from a different remote.
             self.assertNotIn('removed', command)
             if 'expired' in command:
                 raise RuntimeError('summary unavailable')
             if '--user' in command:
-                return 'app/org.example.User/x86_64/stable\n'
+                return 'org.example.User\tstable\t2\n' if 'flathub' in command else ''
             if '--system' in command:
-                return 'runtime/org.example.Platform/x86_64/50\n'
+                return 'org.example.Platform\t50\t51\n' if 'flathub' in command else ''
             if '--installation=extra' in command and 'private' in command:
-                return 'app/org.example.Private/x86_64/stable\n'
+                return 'org.example.Private\tstable\t3\n'
             return ''
         self.fail(f'Unexpected command: {command}')
 

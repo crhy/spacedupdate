@@ -279,6 +279,71 @@ def flatpak_scope(scope):
     return f"--installation={scope}"
 
 
+def remote_versions(scope, remote):
+    """Ask one remote which version it carries for each application.
+
+    The remote is listed without Flatpak's own update filter on purpose: that
+    filter compares an installed ref only against the remote recorded as its
+    origin, so an application installed from a per-app remote is never reported
+    by the shared remote that carries the newer build.
+    """
+    output = run_capture(
+        [
+            "flatpak",
+            "remote-ls",
+            remote,
+            flatpak_scope(scope),
+            "--columns=application,branch,version",
+        ],
+        timeout=90,
+    )
+    versions = {}
+    for line in output.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        application, branch = parts[0].strip(), parts[1].strip()
+        version = parts[2].strip() if len(parts) > 2 else ""
+        if application and branch:
+            versions[(application, branch)] = version
+    return versions
+
+
+def installed_versions(scope):
+    """Read the version installed for each application and branch.
+
+    One listing per installation rather than one per application. The display
+    rows still come from enumerate_flatpak's single all-installations listing.
+    """
+    output = run_capture(
+        [
+            "flatpak",
+            "list",
+            "--all",
+            flatpak_scope(scope),
+            "--columns=application,branch,version",
+        ]
+    )
+    versions = {}
+    for line in output.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        application, branch = parts[0].strip(), parts[1].strip()
+        version = parts[2].strip() if len(parts) > 2 else ""
+        if application and branch:
+            versions[(application, branch)] = version
+    return versions
+
+
+def ref_branch(ref):
+    # Installed refs read as app/<id>/<architecture>/<branch> (or runtime/...),
+    # and some listings drop the leading type, so the branch is the last
+    # component as long as the architecture is present.
+    parts = ref.strip().split("/")
+    return parts[-1] if len(parts) >= 3 else ""
+
+
 def enumerate_flatpak(warnings=None, stats=None):
     """List Flatpak updates.
 
@@ -297,9 +362,22 @@ def enumerate_flatpak(warnings=None, stats=None):
         ["flatpak", "list", "--all", "--columns=application,installation,ref,name"]
     )
     installed = [line.split("\t", 3) for line in listed.splitlines()]
-    update_refs = {row[1]: set() for row in installed if len(row) >= 3}
+    scopes = {row[1] for row in installed if len(row) >= 3}
     errors = []
-    for scope in update_refs:
+    # Flatpak's own update query is not used here: it matches an installed ref
+    # only against the remote recorded as that ref's origin, so an application
+    # installed from a per-app remote stays invisible to the shared remote that
+    # carries the newer build (issue #16). Compare versions instead, and let
+    # every enabled remote of the installation compete for every installed
+    # application and branch.
+    local_versions = {}
+    offered = {}
+    for scope in scopes:
+        try:
+            local_versions[scope] = installed_versions(scope)
+        except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+            errors.append(f"{scope}: {error}")
+            continue
         try:
             remote_rows = run_capture(
                 ["flatpak", "remotes", flatpak_scope(scope), "--columns=name,options"]
@@ -318,32 +396,22 @@ def enumerate_flatpak(warnings=None, stats=None):
             if "disabled" not in options:
                 remotes.append(parts[0].strip())
 
+        newest = {}
         for remote in remotes:
             if stats is not None:
                 stats["remotes_total"] += 1
             try:
-                updates = run_capture(
-                    [
-                        "flatpak",
-                        "remote-ls",
-                        "--updates",
-                        "--all",
-                        flatpak_scope(scope),
-                        remote,
-                        "--columns=ref",
-                    ],
-                    timeout=90,
-                )
+                versions = remote_versions(scope, remote)
             except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
                 errors.append(f"{scope}/{remote}: {error}")
                 if stats is not None:
                     stats["remotes_failed"] += 1
                 continue
-            for line in updates.splitlines():
-                ref = line.strip().split()[0] if line.strip() else ""
-                ref = ref.removeprefix("app/").removeprefix("runtime/")
-                if ref:
-                    update_refs[scope].add(ref)
+            for key, version in versions.items():
+                best = newest.get(key)
+                if best is None or version_key(version) > version_key(best):
+                    newest[key] = version
+        offered[scope] = newest
 
     if errors:
         if warnings is None:
@@ -355,7 +423,16 @@ def enumerate_flatpak(warnings=None, stats=None):
         if len(parts) < 3:
             continue
         app_id, scope, ref = parts[:3]
-        if ref.removeprefix("app/").removeprefix("runtime/") not in update_refs[scope]:
+        branch = ref_branch(ref)
+        if not branch:
+            continue
+        current = local_versions.get(scope, {}).get((app_id, branch), "")
+        wanted = offered.get(scope, {}).get((app_id, branch), "")
+        # Offer the update only when a remote of that installation carries the
+        # same application and branch with a strictly newer version. An equal
+        # or older build is not an update, and neither side can be trusted when
+        # it cannot name a version.
+        if not current or not wanted or version_key(wanted) <= version_key(current):
             continue
         items.append(
             {
